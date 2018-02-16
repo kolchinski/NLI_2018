@@ -1,6 +1,3 @@
-
-
-
 def eval_model(Model, train_data, eval_data):
     model = Model()
     model.train(train_data)

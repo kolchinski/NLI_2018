@@ -1,5 +1,3 @@
-
-
 #Parent class for all models
 class BaseModel:
     def __init__(self):
@@ -11,4 +9,7 @@ class BaseModel:
 
     # Calculate the percent correct on an eval set
     def eval(self, eval_data):
+        raise NotImplementedError
+
+    def predict(self, point):
         raise NotImplementedError

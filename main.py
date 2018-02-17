@@ -1,7 +1,15 @@
+import sys
+sys.path.append('./src')
 import dataman.wrangle as wrangle
-from models.naivemodel import NaiveModel
-import eval
+from models.seq2seq_model_pytorch import Seq2SeqPytorch
+import models.model_pipeline_pytorch as model_pipeline_pytorch
 from utils import dotdict
+import torch
+import torch.optim as optim
+import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 args = dotdict({
     'lr': 0.01,
@@ -10,19 +18,31 @@ args = dotdict({
     'batch_size': 256,
     'batches_per_epoch': 1000,
     'test_batches_per_epoch': 10,
-    'cuda': True,
+    'input_size': 300,
+    'hidden_size': 128,
+    'cuda': torch.cuda.is_available(),
 })
+state = {k: v for k, v in args.items()}
+
 
 if __name__ == "__main__":
-    print("Hello toxic comments world!")
-    dm = wrangle.DataManager(*wrangle.load_data())
+    print('use cuda: {}'.format(args.cuda))
 
-    print('\n')
-    print(dm.train_x1s[0])
-    print(dm.train_x2s[0])
-    print(dm.train_ys[0])
+    dm = wrangle.DataManager()
+    model = Seq2SeqPytorch(args=args)
 
+    for epoch in range(args.epochs):
+        optimizer = optim.Adam(
+            [param for param in model.net.parameters() if param.requires_grad],
+            lr=state['lr'])
+        logger.info('\nEpoch: [{} | {}] LR: {}'.format(
+            epoch + 1, args.epochs, state['lr']))
 
-    # Evaluate "always neutral" model on train data
-    print("\nTesting naive model on small training set. Accuracy:")
-    print(eval.eval_model(NaiveModel, None, dm.train_data))
+        train_loss = model_pipeline_pytorch.train(
+            model=model.net,
+            optimizer=optimizer,
+            epoch=epoch,
+            di=dm,
+            args=args,
+            loss_criterion=model.criterion,
+        )

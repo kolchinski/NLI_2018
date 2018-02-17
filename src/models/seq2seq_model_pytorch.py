@@ -1,5 +1,7 @@
 from basemodel import BaseModel
+import seq2seq_utils_pytorch
 import seq2seq_train_pytorch
+import torch.nn as nn
 
 
 class Seq2SeqPytorch(BaseModel):
@@ -11,26 +13,40 @@ class Seq2SeqPytorch(BaseModel):
         self.batch_size = args.batch_size
         self.batches_per_epoch = args.batches_per_epoch
         self.test_batches_per_epoch = args.test_batches_per_epoch
-        self.cuda = cuda
+        self.input_size = args.input_size
+        self.output_size = 3
+        self.cuda = args.cuda
 
-        self.encoder =
-        self.decoder =
-        self.encoder_optimizer =
-        self.decoder_optimizer =
-        self.criterion =
+        self.encoder_hidden_size = args.hidden_size
+        self.decoder_hidden_size = args.hidden_size
 
-    def train(self, train_data):
-        train_loss = seq2seq_train_pytorch.train(
-            input_variable=input_variable,
-            target_variable=target_variable,
-            encoder=self.encoder,
-            decoder=self.decoder,
-            encoder_optimizer=self.encoder_optimizer,
-            decoder_optimizer=self.decoder_optimizer,
-            criterion=self.criterion,
-            max_length=self.max_length,
+        self.encoder = seq2seq_utils_pytorch.EncoderRNN(
+            input_size=self.input_size,
+            hidden_size=self.encoder_hidden_size,
         )
+        self.decoder = seq2seq_utils_pytorch.DecoderRNN(
+            input_size=self.input_size,
+            hidden_size=self.decoder_hidden_size,
+            output_size=self.output_size)
 
-        return train_loss
+        self.criterion = nn.NLLLoss()
 
-    def eval(self, eval_data):
+        self.net = Seq2Seq(encoder=self.encoder, decoder=self.decoder)
+
+
+class Seq2Seq(nn.Module):
+    def __init__(self, encoder, decoder):
+        super(Seq2Seq, self).__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+    def forward(self, input_variable, input_lengths=None, target_variable=None,
+                teacher_forcing_ratio=0):
+        encoder_outputs, encoder_hidden = self.encoder(
+            input_variable, input_lengths)
+        result = self.decoder(inputs=target_variable,
+                              encoder_hidden=encoder_hidden,
+                              encoder_outputs=encoder_outputs,
+                              function=self.decode_function,
+                              teacher_forcing_ratio=teacher_forcing_ratio)
+        return result

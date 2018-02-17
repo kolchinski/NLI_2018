@@ -1,13 +1,13 @@
 # python 3
-
+import torch
 from torch.autograd import Variable
 
 SOS_token = 0
 EOS_token = 1
 
-class Lang:
-    def __init__(self, name):
-        self.name = name
+
+class Vocab:
+    def __init__(self):
         self.word2index = {}
         self.word2count = {}
         self.index2word = {0: "SOS", 1: "EOS"}
@@ -31,7 +31,7 @@ def indexesFromSentence(word2index, sentence):
     return [word2index[word] for word in sentence.split(' ')]
 
 
-def variableFromSentence(word2index, sentence):
+def variableFromSentence(word2index, sentence, use_cuda):
     indexes = indexesFromSentence(word2index, sentence)
     indexes.append(EOS_token)
     result = Variable(torch.LongTensor(indexes).view(-1, 1))

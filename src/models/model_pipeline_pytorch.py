@@ -1,11 +1,11 @@
-import argparse
+import sys
+sys.path.append('../../../')
+
 import os
 import shutil
 import time
-import random
 from pytorch_classification.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 import numpy as np
-import math
 
 import torch
 import torch.nn as nn
@@ -31,9 +31,8 @@ def eval(outputs, targets, args, thres=0.5, eps=1e-9):
     return (precis, recall, f1)
 
 
-def train(model, optimizer, epoch, di, args, loss_criterion, mask_criterion):
-    # switch to train mode
-    model.train()
+def train(model, optimizer, epoch, di, args, loss_criterion):
+    model.train()  # switch to train mode
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -51,7 +50,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion, mask_criterion):
     all_targets = np.array([])
 
     while batch_idx < args.batches_per_epoch:
-        seq_batch, gene_batch, target_batch, locus_mean_batch = di.sample_train_batch(args.batch_size)
+        sent1, sent2, lab = di.sample_train_batch(args.batch_size)
         seq_batch = torch.from_numpy(seq_batch)
         gene_batch = torch.FloatTensor(gene_batch)
         targets = torch.from_numpy(target_batch)
@@ -68,7 +67,6 @@ def train(model, optimizer, epoch, di, args, loss_criterion, mask_criterion):
         # compute output
         outputs, masks = model(seq_batch, gene_batch, locus_mean_batch)
         loss = loss_criterion(outputs, targets)
-        mask_loss = mask_loss(masks)
 
         # concat to all_preds, all_targets
         index = Variable(torch.LongTensor([1]))
@@ -83,11 +81,9 @@ def train(model, optimizer, epoch, di, args, loss_criterion, mask_criterion):
         recall.update(r, seq_batch.size(0))
         f1.update(f, seq_batch.size(0))
         losses.update(loss.data[0], seq_batch.size(0))
-        mask_losses.update(mask_loss.data[0], seq_batch.size(0))
         # compute gradient and do SGD step
         optimizer.zero_grad()
 
-        loss += mask_loss
         loss.backward()
         optimizer.step()
 

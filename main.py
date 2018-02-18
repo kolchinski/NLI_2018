@@ -20,6 +20,7 @@ args = dotdict({
     'test_batches_per_epoch': 10,
     'input_size': 300,
     'hidden_size': 128,
+    'embedding_size': 300,
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -29,7 +30,7 @@ if __name__ == "__main__":
     print('use cuda: {}'.format(args.cuda))
 
     dm = wrangle.DataManager()
-    model = Seq2SeqPytorch(args=args)
+    model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
 
     for epoch in range(args.epochs):
         optimizer = optim.Adam(

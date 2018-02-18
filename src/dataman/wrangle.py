@@ -2,8 +2,8 @@ import constants
 import json
 import logging
 import sys
-sys.path.append('../models')
-import vocab_pytorch
+sys.path.append('../')
+import models.vocab_pytorch as vocab_pytorch
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +41,14 @@ class DataManager:
                 dat = json.loads(l)
                 lab = dat['gold_label']
                 if lab in NLILabelDict:
-                    sent1s.append(dat['sentence1'])
-                    sent2s.append(dat['sentence2'])
+                    sent1 = dat['sentence1'].lower()
+                    sent2 = dat['sentence2'].lower()
+                    sent1s.append(sent1)
+                    sent2s.append(sent2)
                     ys.append(NLILabelDict[lab])
                     if train:
-                        self.vocab.addSentence(dat['sentence1'])
-                        self.vocab.addSentence(dat['sentence2'])
+                        self.vocab.addSentence(sent1)
+                        self.vocab.addSentence(sent2)
         print('read {} pairs'.format(len(sent1s)))
         if train:
             print('vocab size: {}'.format(self.vocab.n_words))

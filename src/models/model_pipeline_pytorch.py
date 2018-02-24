@@ -4,8 +4,7 @@ sys.path.append('../../../')
 import os
 import shutil
 import time
-from pytorch_classification.utils import Logger, AverageMeter, accuracy, mkdir_p, savefig
-from pytorch_classification.utils.progress.progress.bar import Bar
+from pytorch_classification.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
 import numpy as np
 
 import torch

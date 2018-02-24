@@ -46,7 +46,11 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         data_time.update(time.time() - end)
 
         # compute output
-        softmax_outputs = model(sent1, sent2)
+        softmax_outputs = model(
+            encoder_input=sent1,
+            decoder_input=sent2,
+            batch_size=args.batch_size,
+        )
 
         # loss = loss_criterion(softmax_outputs, targets)
         loss = nn.NLLLoss()(softmax_outputs, targets)

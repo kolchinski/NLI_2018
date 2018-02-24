@@ -50,9 +50,9 @@ class Seq2Seq(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, encoder_input, decoder_input, target_variable=None,
+    def forward(self, encoder_input, decoder_input, batch_size, target_variable=None,
                 teacher_forcing_ratio=0):
-        encoder_init_hidden = self.encoder.initHidden()
+        encoder_init_hidden = self.encoder.initHidden(batch_size=batch_size)
         encoder_outputs, encoder_hidden = self.encoder(
             encoder_input, encoder_init_hidden)
         result = self.decoder(decoder_input, encoder_hidden)
@@ -77,8 +77,8 @@ class EncoderRNN(nn.Module):
         output, hidden = self.gru(input, hidden)
         return output, hidden
 
-    def initHidden(self):
-        result = Variable(torch.zeros(1, 1, self.hidden_size))
+    def initHidden(self, batch_size):
+        result = Variable(torch.zeros(1, batch_size, self.hidden_size))
         if use_cuda:
             result.cuda()
         return result

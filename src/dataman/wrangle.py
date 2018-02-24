@@ -40,7 +40,7 @@ class DataManager:
         ) = self.load_data(constants.TEST_DATA_PATH)
 
     def sample_train_batch(self, batch_size, embed, use_cuda):
-        sample_idx = range(1, batch_size)  # TODO: iterative sampling
+        sample_idx = range(1, batch_size + 1)  # TODO: iterative sampling
         train_sent1s_num = self.train_sent1s_num[sample_idx]
         train_sent1s_len = self.train_sent1s_len[sample_idx]
         train_sent2s_num = self.train_sent2s_num[sample_idx]

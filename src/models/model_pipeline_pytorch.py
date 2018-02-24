@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 from pytorch_classification.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+#from pytorch_classification.utils.progress.progress.bar import Bar
 import numpy as np
 
 import torch
@@ -83,7 +84,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
                 loss=losses.avg,
                 acc=acc.avg,
             )
-        next(bar)
+        bar.next()
     bar.finish()
 
     return losses.avg, acc.avg

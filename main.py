@@ -29,7 +29,7 @@ state = {k: v for k, v in args.items()}
 if __name__ == "__main__":
     print('use cuda: {}'.format(args.cuda))
 
-    dm = wrangle.DataManager()
+    dm = wrangle.DataManager(max_len=args.max_length)
     model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
 
     for epoch in range(args.epochs):

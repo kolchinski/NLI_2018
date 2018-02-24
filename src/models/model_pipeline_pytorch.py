@@ -34,21 +34,22 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
     batch_idx = 0
 
     while batch_idx < args.batches_per_epoch:
-        sent1, sent2, lab = di.sample_train_batch(args.batch_size)
-        input1 = di.vocab.get_packedseq_from_sent_batch(
-            sent1, embed=model.encoder.embedding, use_cuda=args.cuda)
-        input2 = di.vocab.get_packedseq_from_sent_batch(
-            sent2, embed=model.decoder.embedding, use_cuda=args.cuda)
-        targets = Variable(torch.from_numpy(np.array(lab)))
+        sent1, sent2, targets = di.sample_train_batch(
+            args.batch_size,
+            embed=model.encoder.embedding,
+            use_cuda=args.cuda,
+        )
         if args.cuda:
             targets = targets.cuda(async=True)
 
-        # measure data loading time
+        # measure data loading timeult
         data_time.update(time.time() - end)
 
         # compute output
-        softmax_outputs = model(input1, input2)
-        loss = loss_criterion(softmax_outputs, targets)
+        softmax_outputs = model(sent1, sent2)
+
+        # loss = loss_criterion(softmax_outputs, targets)
+        loss = nn.NLLLoss()(softmax_outputs, targets)
 
         # measure accuracy and record loss
         acc_batch = eval(softmax_outputs.data, targets.data, args)
@@ -66,7 +67,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         batch_idx += 1
 
         # plot progress
-        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s'
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s'\
         '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
             .format(
                 batch=batch_idx,

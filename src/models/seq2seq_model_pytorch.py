@@ -1,5 +1,5 @@
 # python 3
-from models.basemodel import BaseModel
+from basemodel import BaseModel
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
@@ -94,6 +94,5 @@ class DecoderRNN(EncoderRNN):
 
     def forward(self, input, hidden):
         output, hidden = EncoderRNN.forward(self, input=input, hidden=hidden)
-        print(output)
         last_output = self.out(hidden[-1])
         return F.log_softmax(last_output)

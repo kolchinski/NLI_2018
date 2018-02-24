@@ -9,6 +9,9 @@ import torch.optim as optim
 import sys
 import logging
 
+import models.load_embeddings as load_embeddings
+import constants
+
 logger = logging.getLogger(__name__)
 
 args = dotdict({
@@ -31,6 +34,8 @@ if __name__ == "__main__":
 
     dm = wrangle.DataManager(max_len=args.max_length)
     model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+    model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(dm.vocab, constants.EMBED_DATA_PATH,
+                                                                                 args.embedding_size)
 
     for epoch in range(args.epochs):
         optimizer = optim.Adam(

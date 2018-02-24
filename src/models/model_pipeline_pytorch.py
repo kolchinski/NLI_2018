@@ -18,8 +18,8 @@ import sklearn.metrics
 
 
 def eval(outputs, targets, args, thres=0.5, eps=1e-9):
-    acc = 0
-    return acc
+    acc = accuracy(outputs, targets, topk=(1,))
+    return acc[0][0]
 
 
 def train(model, optimizer, epoch, di, args, loss_criterion):
@@ -58,7 +58,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
 
         # measure accuracy and record loss
         acc_batch = eval(softmax_outputs.data, targets.data, args)
-        acc.update(acc_batch)
+        acc.update(acc_batch, args.batch_size)
         losses.update(loss.data[0], len(sent1))
         # compute gradient and do SGD step
         optimizer.zero_grad()

@@ -1,5 +1,5 @@
 # python 3
-from basemodel import BaseModel
+from models.basemodel import BaseModel
 import torch.nn as nn
 import torch
 from torch.autograd import Variable

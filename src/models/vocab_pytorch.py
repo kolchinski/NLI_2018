@@ -46,7 +46,7 @@ class Vocab:
             numberized_batch.append(numberized)
         print('numberized example: {} for sent: \"{}\"'.format(
             numberized, sent_batch[-1]))
-        seq_lengths = torch.LongTensor(map(len, numberized_batch))
+        seq_lengths = torch.LongTensor([len(x) for x in numberized_batch])
         seq_tensor = Variable(torch.zeros(
             (len(numberized_batch), seq_lengths.max()))).long()
         if use_cuda:

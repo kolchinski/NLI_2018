@@ -1,6 +1,5 @@
 # python 3
-from basemodel import BaseModel
-import seq2seq_utils_pytorch
+from models.basemodel import BaseModel
 import torch.nn as nn
 import torch
 from torch.autograd import Variable

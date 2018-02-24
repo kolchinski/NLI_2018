@@ -39,7 +39,6 @@ class Vocab:
         numberized.append(EOS_token)
         return numberized
 
-<<<<<<< HEAD
     def get_packedseq_from_sent_batch(
         self,
         seq_tensor,
@@ -47,18 +46,6 @@ class Vocab:
         embed,
         use_cuda,
     ):
-=======
-    def get_packedseq_from_sent_batch(self, sent_batch, embed, use_cuda):
-        numberized_batch = []
-        for sent in sent_batch:
-            numberized = self.numberize_sentence(sent)
-            numberized_batch.append(numberized)
-        print('numberized example: {} for sent: \"{}\"'.format(
-            numberized, sent_batch[-1]))
-        seq_lengths = torch.LongTensor([len(x) for x in numberized_batch])
-        seq_tensor = Variable(torch.zeros(
-            (len(numberized_batch), seq_lengths.max()))).long()
->>>>>>> master
         if use_cuda:
             seq_lengths.cuda()
             seq_tensor.cuda()

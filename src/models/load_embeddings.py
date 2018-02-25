@@ -61,7 +61,7 @@ def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
             itos.append(word)
         stoi = {word: i for i, word in enumerate(itos)}
         vectors = torch.Tensor(vectors).view(-1, dim)
-        print(vectors.shape())
+        print(vectors.shape)
         logger.info('Saving vectors to {}'.format(path_pt))
         torch.save((itos, stoi, vectors, dim), path_pt)
     # Look up vectors for words in vocabularin the pretrained vectors

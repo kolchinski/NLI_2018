@@ -17,7 +17,7 @@ from torch.autograd import Variable
 import sklearn.metrics
 
 
-def eval(outputs, targets, args, thres=0.5, eps=1e-9):
+def compute_accuracy(outputs, targets):
     acc = accuracy(outputs, targets, topk=(1,))
     return acc[0][0]
 
@@ -35,9 +35,10 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
     batch_idx = 0
 
     while batch_idx < args.batches_per_epoch:
+        # sample batch
         sent1, sent2, targets = di.sample_train_batch(
-            args.batch_size,
-            embed=model.encoder.embedding,
+            encoder_embed=model.encoder.embedding,
+            decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,
         )
         if args.cuda:
@@ -52,17 +53,18 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             decoder_input=sent2,
             batch_size=args.batch_size,
         )
-
-        # loss = loss_criterion(softmax_outputs, targets)
-        loss = nn.NLLLoss()(softmax_outputs, targets)
+        loss = loss_criterion(softmax_outputs, targets)
 
         # measure accuracy and record loss
-        acc_batch = eval(softmax_outputs.data, targets.data, args)
+        acc_batch = compute_accuracy(
+            outputs=softmax_outputs.data,
+            targets=targets.data,
+        )
         acc.update(acc_batch, args.batch_size)
         losses.update(loss.data[0], len(sent1))
+
         # compute gradient and do SGD step
         optimizer.zero_grad()
-
         loss.backward()
         optimizer.step()
 
@@ -87,6 +89,73 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         bar.next()
     bar.finish()
 
+    return losses.avg, acc.avg
+
+def test(model, epoch, di, args, loss_criterion):
+    global best_acc
+
+    # switch to evaluate mode
+    model.eval()
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    acc = AverageMeter()
+    end = time.time()
+
+    bar = Bar('Processing', max=args.test_batches_per_epoch)
+    batch_idx = 0
+
+    while batch_idx < args.test_batches_per_epoch:
+        # sample batch
+        sent1, sent2, targets = di.sample_dev_batch(
+            encoder_embed=model.encoder.embedding,
+            decoder_embed=model.decoder.embedding,
+            use_cuda=args.cuda,
+        )
+        if args.cuda:
+            targets = targets.cuda(async=True)
+
+        # measure data loading time
+        data_time.update(time.time() - end)
+
+        # compute output
+        softmax_outputs = model(
+            encoder_input=sent1,
+            decoder_input=sent2,
+            batch_size=args.batch_size,
+        )
+        loss = loss_criterion(softmax_outputs, targets)
+
+        # measure accuracy and record loss
+        acc_batch = compute_accuracy(
+            outputs=softmax_outputs.data,
+            targets=targets.data,
+        )
+        acc.update(acc_batch, args.batch_size)
+        losses.update(loss.data[0], len(sent1))
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+        batch_idx += 1
+
+        # plot progress
+        # plot progress
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s'\
+        '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
+            .format(
+                batch=batch_idx,
+                size=args.batches_per_epoch,
+                data=data_time.avg,
+                bt=batch_time.avg,
+                total=bar.elapsed_td,
+                eta=bar.eta_td,
+                loss=losses.avg,
+                acc=acc.avg,
+            )
+        bar.next()
+    bar.finish()
     return losses.avg, acc.avg
 
 

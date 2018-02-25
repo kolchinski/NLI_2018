@@ -33,10 +33,12 @@ state = {k: v for k, v in args.items()}
 if __name__ == "__main__":
     print('use cuda: {}'.format(args.cuda))
 
-    dm = wrangle.DataManager(max_len=args.max_length)
+    dm = wrangle.DataManager(args)
     model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
     model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
         dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+
+    best_dev_acc = 0
 
     for epoch in range(args.epochs):
         optimizer = optim.Adam(
@@ -45,7 +47,7 @@ if __name__ == "__main__":
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 
-        train_loss = model_pipeline_pytorch.train(
+        train_loss, train_acc = model_pipeline_pytorch.train(
             model=model.net,
             optimizer=optimizer,
             epoch=epoch,
@@ -53,10 +55,15 @@ if __name__ == "__main__":
             args=args,
             loss_criterion=model.criterion,
         )
-        dev_loss = model_pipeline_pytorch.eval(
+        dev_loss, dev_acc = model_pipeline_pytorch.test(
             model=model.net,
             epoch=epoch,
             di=dm,
             args=args,
             loss_criterion=model.criterion,
         )
+        if dev_acc > best_dev_acc:
+            print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
+            best_dev_acc = dev_acc
+            print('Saving to checkpoint')
+            # TODO

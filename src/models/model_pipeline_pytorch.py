@@ -36,18 +36,29 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
 
     while batch_idx < args.batches_per_epoch:
         # sample batch
-        sent1, sent2, targets = di.sample_train_batch(
-            encoder_embed=model.encoder.embedding,
-            decoder_embed=model.decoder.embedding,
-            use_cuda=args.cuda,
-        )
+        try:
+            sent1, sent2, targets = di.sample_train_batch(
+                encoder_embed=model.encoder.embedding,
+                decoder_embed=model.decoder.embedding,
+                use_cuda=args.cuda,
+            )
+        except AttributeError:
+            sent1, sent2, targets = di.sample_train_batch(
+                encoder_embed=model.embed,
+                decoder_embed=model.embed,
+                use_cuda=args.cuda,
+            )
         encoder_init_hidden = model.encoder.initHidden(
             batch_size=args.batch_size)
+
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
+            if len(encoder_init_hidden):
+                encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+            else:
+                encoder_init_hidden = encoder_init_hidden.cuda()
             loss_criterion = loss_criterion.cuda()
-            encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading timeult
         data_time.update(time.time() - end)
@@ -156,7 +167,7 @@ def test(model, epoch, di, args, loss_criterion):
         '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
             .format(
                 batch=batch_idx,
-                size=args.batches_per_epoch,
+                size=args.test_batches_per_epoch,
                 data=data_time.avg,
                 bt=batch_time.avg,
                 total=bar.elapsed_td,

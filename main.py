@@ -1,8 +1,11 @@
 import sys
 sys.path.append('./src')
+import torch.nn as nn
+
 import dataman.wrangle as wrangle
 from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
+import models.siamese_pytorch as siamese_pytorch
 from utils import dotdict
 import torch
 import torch.optim as optim
@@ -15,15 +18,22 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
-    'lr': 0.1,
-    'max_length': 5,
+    'lr': 0.01,
+    'max_length': 100,
     'epochs': 5,
     'batch_size': 256,
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 200,
     'input_size': 300,
-    'hidden_size': 128,
+    'hidden_size': 512,
+    'n_layers': 1,
+    'bidirectional': False,
     'embedding_size': 300,
+    'fix_emb': True,
+    'projection': None,
+    'd_proj': None,
+    'dp_ratio': 0.3,
+    'd_out': 3,  # 3 classes
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -33,9 +43,19 @@ if __name__ == "__main__":
     print('use cuda: {}'.format(args.cuda))
 
     dm = wrangle.DataManager(args)
-    model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-    model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
-        dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    args.n_embed = dm.vocab.n_words
+    if True:
+        model = siamese_pytorch.SNLIClassifier(config=args)
+        model.embed.weight.data = load_embeddings.load_embeddings(
+            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        model = dotdict({
+            'net': model,
+            'criterion': nn.NLLLoss(),
+        })  # sorry!
+    else:
+        model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+        model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
+            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
     best_dev_acc = 0
 

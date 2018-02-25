@@ -49,8 +49,8 @@ class Seq2Seq(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, encoder_init_hidden, encoder_input, decoder_input, batch_size, target_variable=None,
-                teacher_forcing_ratio=0):
+    def forward(self, encoder_init_hidden, encoder_input, decoder_input,
+                batch_size, target_variable=None, teacher_forcing_ratio=0):
         encoder_outputs, encoder_hidden = self.encoder(
             encoder_input, encoder_init_hidden)
         result = self.decoder(decoder_input, encoder_hidden)

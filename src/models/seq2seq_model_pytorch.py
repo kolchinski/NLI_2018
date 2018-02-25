@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 use_cuda = torch.cuda.is_available()
 
-
 class Seq2SeqPytorch(BaseModel):
     def __init__(self, args, vocab):
         BaseModel.__init__(self)
@@ -50,9 +49,8 @@ class Seq2Seq(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, encoder_input, decoder_input, batch_size, target_variable=None,
+    def forward(self, encoder_init_hidden, encoder_input, decoder_input, batch_size, target_variable=None,
                 teacher_forcing_ratio=0):
-        encoder_init_hidden = self.encoder.initHidden(batch_size=batch_size)
         encoder_outputs, encoder_hidden = self.encoder(
             encoder_input, encoder_init_hidden)
         result = self.decoder(decoder_input, encoder_hidden)
@@ -78,10 +76,7 @@ class EncoderRNN(nn.Module):
         return output, hidden
 
     def initHidden(self, batch_size):
-        result = Variable(torch.zeros(1, batch_size, self.hidden_size))
-        if use_cuda:
-            result.cuda()
-        return result
+        return Variable(torch.zeros(1, batch_size, self.hidden_size))
 
 
 class DecoderRNN(EncoderRNN):
@@ -95,4 +90,4 @@ class DecoderRNN(EncoderRNN):
     def forward(self, input, hidden):
         output, hidden = EncoderRNN.forward(self, input=input, hidden=hidden)
         last_output = self.out(hidden[-1])
-        return F.log_softmax(last_output)
+        return F.log_softmax(last_output, dim=0)

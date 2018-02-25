@@ -41,14 +41,20 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,
         )
+        encoder_init_hidden = model.encoder.initHidden(
+            batch_size=args.batch_size)
         if args.cuda:
+            model = model.cuda()
             targets = targets.cuda(async=True)
+            loss_criterion = loss_criterion.cuda()
+            encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading timeult
         data_time.update(time.time() - end)
 
         # compute output
         softmax_outputs = model(
+            encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
             decoder_input=sent2,
             batch_size=args.batch_size,
@@ -113,14 +119,19 @@ def test(model, epoch, di, args, loss_criterion):
             decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,
         )
+        encoder_init_hidden = model.encoder.initHidden(
+            batch_size=args.batch_size)
         if args.cuda:
+            model = model.cuda()
             targets = targets.cuda(async=True)
+            encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading time
         data_time.update(time.time() - end)
 
         # compute output
         softmax_outputs = model(
+            encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
             decoder_input=sent2,
             batch_size=args.batch_size,

@@ -47,8 +47,8 @@ class Vocab:
         use_cuda,
     ):
         if use_cuda:
-            seq_lengths.cuda()
-            seq_tensor.cuda()
+            seq_lengths = seq_lengths.cuda()
+            seq_tensor = seq_tensor.cuda()
 
         # sort by length
         seq_lengths, perm_idx = seq_lengths.sort(0, descending=True)

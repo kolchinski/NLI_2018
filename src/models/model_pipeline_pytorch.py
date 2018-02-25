@@ -41,14 +41,20 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,
         )
+        encoder_init_hidden = model.encoder.initHidden(
+            batch_size=args.batch_size)
         if args.cuda:
+            model = model.cuda()
             targets = targets.cuda(async=True)
+            loss_criterion = loss_criterion.cuda()
+            encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading timeult
         data_time.update(time.time() - end)
 
         # compute output
         softmax_outputs = model(
+            encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
             decoder_input=sent2,
             batch_size=args.batch_size,
@@ -113,14 +119,19 @@ def test(model, epoch, di, args, loss_criterion):
             decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,
         )
+        encoder_init_hidden = model.encoder.initHidden(
+            batch_size=args.batch_size)
         if args.cuda:
+            model = model.cuda()
             targets = targets.cuda(async=True)
+            encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading time
         data_time.update(time.time() - end)
 
         # compute output
         softmax_outputs = model(
+            encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
             decoder_input=sent2,
             batch_size=args.batch_size,
@@ -140,7 +151,6 @@ def test(model, epoch, di, args, loss_criterion):
         end = time.time()
         batch_idx += 1
 
-        # plot progress
         # plot progress
         bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s'\
         '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
@@ -170,8 +180,10 @@ def save_checkpoint(state, is_best, checkpoint='checkpoint',
         print("Checkpoint Directory exists! ")
     torch.save(state, filepath)
     if is_best:
-        shutil.copyfile(filepath,
-                        os.path.join(checkpoint, 'model_best.pth.tar'))
+        shutil.copyfile(
+            filepath,
+            os.path.join(checkpoint, 'model_best.pth.tar'),
+        )
 
 
 def load_checkpoint(model, checkpoint='checkpoint',

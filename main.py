@@ -15,13 +15,12 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
-    'lr': 0.01,
+    'lr': 0.1,
     'max_length': 5,
     'epochs': 5,
     'batch_size': 256,
-    'batches_per_epoch': 5,  # for testing
-    # 'batches_per_epoch': 1000,
-    'test_batches_per_epoch': 10,
+    'batches_per_epoch': 5000,
+    'test_batches_per_epoch': 200,
     'input_size': 300,
     'hidden_size': 128,
     'embedding_size': 300,
@@ -47,6 +46,8 @@ if __name__ == "__main__":
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 
+        if args.cuda:
+            model.net.cuda()
         train_loss, train_acc = model_pipeline_pytorch.train(
             model=model.net,
             optimizer=optimizer,

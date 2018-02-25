@@ -156,7 +156,7 @@ def test(model, epoch, di, args, loss_criterion):
         '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
             .format(
                 batch=batch_idx,
-                size=args.batches_per_epoch,
+                size=args.test_batches_per_epoch,
                 data=data_time.avg,
                 bt=batch_time.avg,
                 total=bar.elapsed_td,

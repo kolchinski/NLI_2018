@@ -15,14 +15,14 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
-    'lr': 0.1,
-    'max_length': 5,
+    'lr': 0.01,
+    'max_length': 100,
     'epochs': 5,
     'batch_size': 256,
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 200,
     'input_size': 300,
-    'hidden_size': 128,
+    'hidden_size': 512,
     'embedding_size': 300,
     'cuda': torch.cuda.is_available(),
 })

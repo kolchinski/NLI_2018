@@ -17,48 +17,96 @@ NLILabelDict = {
 }
 
 class DataManager:
-    def __init__(self, max_len):
-        self.max_len = max_len
+    def __init__(self, args):
+        self.max_len = args.max_length
         self.vocab = vocab_pytorch.Vocab()
+        self.batch_size = args.batch_size
         print('loading train..')
         (
             self.train_sent1s_num, self.train_sent1s_len,
             self.train_sent2s_num, self.train_sent2s_len,
-            self.train_ys
+            self.train_ys, self.train_size
         ) = self.load_data(constants.SMALL_TRAIN_DATA_PATH, train=True)
         print('loading dev..')
         (
             self.dev_sent1s_num, self.dev_sent1s_len,
             self.dev_sent2s_num, self.dev_sent2s_len,
-            self.dev_ys
+            self.dev_ys, self.dev_size
         ) = self.load_data(constants.DEV_DATA_PATH)
         print('loading test..')
         (
             self.test_sent1s_num, self.test_sent1s_len,
             self.test_sent2s_num, self.test_sent2s_len,
-            self.test_ys
+            self.test_ys, self.test_size
         ) = self.load_data(constants.TEST_DATA_PATH)
 
-    def sample_train_batch(self, batch_size, embed, use_cuda):
-        sample_idx = range(1, batch_size + 1)  # TODO: iterative sampling
-        train_sent1s_num = self.train_sent1s_num[sample_idx]
-        train_sent1s_len = self.train_sent1s_len[sample_idx]
-        train_sent2s_num = self.train_sent2s_num[sample_idx]
-        train_sent2s_len = self.train_sent2s_len[sample_idx]
-        targets_tensor = self.train_ys[sample_idx]
+        self.curr_batch_train = 0
+        self.curr_batch_dev = 0
+        self.curr_batch_test = 0
+        self.num_batch_train = self.train_size // self.batch_size
+        self.num_batch_dev = self.dev_size // self.batch_size
+        self.num_batch_test = self.test_size // self.batch_size
+
+    def sample_train_batch(
+        self,
+        encoder_embed,
+        decoder_embed,
+        use_cuda,
+    ):
+        sample_idx = self.curr_batch_train * self.batch_size
+        train_sent1s_num = self.train_sent1s_num[sample_idx: sample_idx + self.batch_size]
+        train_sent1s_len = self.train_sent1s_len[sample_idx: sample_idx + self.batch_size]
+        train_sent2s_num = self.train_sent2s_num[sample_idx: sample_idx + self.batch_size]
+        train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
+        targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
 
         seq1_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
             seq_lengths=train_sent1s_len,
-            embed=embed,
+            embed=encoder_embed,
             use_cuda=use_cuda,
         )
         seq2_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent2s_num,
             seq_lengths=train_sent2s_len,
-            embed=embed,
+            embed=decoder_embed,
             use_cuda=use_cuda,
         )
+        self.curr_batch_train = (self.curr_batch_train + 1) % self.num_batch_train
+
+        return (
+            seq1_packed_tensor,  # [batch_size, seq_len]
+            seq2_packed_tensor,  # [batch_size, seq_len]
+            Variable(targets_tensor),  # [batch_size,]
+        )
+
+    def sample_dev_batch(
+        self,
+        encoder_embed,
+        decoder_embed,
+        use_cuda,
+    ):
+        sample_idx = self.curr_batch_dev * self.batch_size
+        dev_sent1s_num = self.dev_sent1s_num[sample_idx: sample_idx + self.batch_size]
+        dev_sent1s_len = self.dev_sent1s_len[sample_idx: sample_idx + self.batch_size]
+        dev_sent2s_num = self.dev_sent2s_num[sample_idx: sample_idx + self.batch_size]
+        dev_sent2s_len = self.dev_sent2s_len[sample_idx: sample_idx + self.batch_size]
+        targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
+
+        seq1_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+            seq_tensor=dev_sent1s_num,
+            seq_lengths=dev_sent1s_len,
+            embed=encoder_embed,
+            use_cuda=use_cuda,
+        )
+        seq2_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+            seq_tensor=dev_sent2s_num,
+            seq_lengths=dev_sent2s_len,
+            embed=decoder_embed,
+            use_cuda=use_cuda,
+        )
+        self.curr_batch_dev = (self.curr_batch_dev + 1) % self.num_batch_dev
+
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
             seq2_packed_tensor,  # [batch_size, seq_len]
@@ -77,10 +125,13 @@ class DataManager:
                     sent1s.append(sent1)
                     sent2s.append(sent2)
                     targets.append(NLILabelDict[lab])
-                    if train:
+                    if True:  # if train:
+                    # this is slightly cheating (adding dev vocab)
+                    # but convenient so we dont load the entire GloVe vocab
                         self.vocab.addSentence(sent1)
                         self.vocab.addSentence(sent2)
-        print('read {} pairs'.format(len(sent1s)))
+        n_rows = len(sent1s)
+        print('read {} pairs'.format(n_rows))
         if train:
             print('vocab size: {}'.format(self.vocab.n_words))
 
@@ -102,7 +153,7 @@ class DataManager:
         return (
             sent1_bin_tensor, sent1_len_tensor,
             sent2_bin_tensor, sent2_len_tensor,
-            targets,
+            targets, n_rows
         )
 
     def get_numberized_tensor(self, sent_num):

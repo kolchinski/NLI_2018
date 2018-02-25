@@ -141,7 +141,6 @@ def test(model, epoch, di, args, loss_criterion):
         batch_idx += 1
 
         # plot progress
-        # plot progress
         bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s'\
         '| Total: {total:} | ETA: {eta:} | Loss: {loss:.4f} | Acc: {acc:.3f}'\
             .format(

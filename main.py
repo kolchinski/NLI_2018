@@ -20,7 +20,7 @@ args = dotdict({
     'epochs': 5,
     'batch_size': 256,
     'batches_per_epoch': 1000,
-    'test_batches_per_epoch': 10,
+    'test_batches_per_epoch': 200,
     'input_size': 300,
     'hidden_size': 128,
     'embedding_size': 300,

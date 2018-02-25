@@ -19,7 +19,8 @@ args = dotdict({
     'max_length': 5,
     'epochs': 5,
     'batch_size': 256,
-    'batches_per_epoch': 1000,
+    'batches_per_epoch': 5,  # for testing
+    # 'batches_per_epoch': 1000,
     'test_batches_per_epoch': 10,
     'input_size': 300,
     'hidden_size': 128,
@@ -34,8 +35,8 @@ if __name__ == "__main__":
 
     dm = wrangle.DataManager(max_len=args.max_length)
     model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-    model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(dm.vocab, constants.EMBED_DATA_PATH,
-                                                                                 args.embedding_size)
+    model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
+        dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
     for epoch in range(args.epochs):
         optimizer = optim.Adam(
@@ -47,6 +48,13 @@ if __name__ == "__main__":
         train_loss = model_pipeline_pytorch.train(
             model=model.net,
             optimizer=optimizer,
+            epoch=epoch,
+            di=dm,
+            args=args,
+            loss_criterion=model.criterion,
+        )
+        dev_loss = model_pipeline_pytorch.eval(
+            model=model.net,
             epoch=epoch,
             di=dm,
             args=args,

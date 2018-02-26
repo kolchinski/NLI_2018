@@ -10,7 +10,7 @@ preprocess_exec="sed -f tokenizer.sed"
 path=static/snli_1.0
 
 #If you also wish to make the small training set from the original one, then please uncomment the following line
-#head -n 10000 $path/snli_1.0_train.txt > $path/snli_1.0_train_small.txt
+head -n 10000 $path/snli_1.0_train.txt > $path/snli_1.0_train_small.txt
 
 for split in train train_small dev test
 do

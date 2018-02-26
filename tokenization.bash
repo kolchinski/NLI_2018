@@ -16,8 +16,8 @@ for split in train train_small dev test
 do
     fpath=$path/$split.snli.txt
     awk '{ if ( $1 != "-" ) { print $0; } }' $path/snli_1.0_$split.txt | cut -f 1,6,7 | sed '1d' > $fpath
-    cut -f1 $fpath > $path/labels.$split
-    cut -f2 $fpath | $preprocess_exec > $path/s1.$split
-    cut -f3 $fpath | $preprocess_exec > $path/s2.$split
+    cut -f1 $fpath > $path/$split.labels
+    cut -f2 $fpath | $preprocess_exec > $path/$split.s1
+    cut -f3 $fpath | $preprocess_exec > $path/$split.s2
     rm $fpath
 done

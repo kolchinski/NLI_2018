@@ -43,6 +43,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         )
         if args.cuda:
             targets = targets.cuda(async=True)
+            loss_criterion.cuda()
 
         # measure data loading timeult
         data_time.update(time.time() - end)

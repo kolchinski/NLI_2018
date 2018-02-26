@@ -211,7 +211,7 @@ class DataManager:
                     "the same number of lines.".format(len(lines), n_rows))
             for l in lines:
                 sent2 = l.rstrip().lower()
-                sent2s.append(sent1)
+                sent2s.append(sent2)
                 if True:  # if train:
                     # this is slightly cheating (adding dev vocab)
                     # but convenient so we dont load the entire GloVe vocab

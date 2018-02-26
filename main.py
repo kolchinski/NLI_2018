@@ -87,4 +87,5 @@ if __name__ == "__main__":
             print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
             best_dev_acc = dev_acc
             print('Saving to checkpoint')
-            # TODO
+            model_pipeline_pytorch.save_checkpoint(
+                state=state, epoch=epoch, dev_acc=dev_acc)

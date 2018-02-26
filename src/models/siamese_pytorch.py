@@ -56,6 +56,7 @@ class SNLIClassifier(nn.Module):
             seq_in_size *= 2
         self.out = nn.Sequential(
             nn.Linear(seq_in_size, 512),
+            nn.ReLU(),
             nn.Linear(512, config.d_out),
         )
         # lin_config = [seq_in_size] * 2

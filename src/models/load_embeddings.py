@@ -65,7 +65,7 @@ def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
     for _, (i, token) in enumerate(vocab.index2word.items()):
         if i < 3:  # Skip the first 3 words PAD EOS UNK
             continue
-        token = token.strip(''',.:;"()'/?<>[]{}\|!@#$%^&*''')
+        #token = token.strip(''',.:;"()'/?<>[]{}\|!@#$%^&*''')
         #print(i,token,(token in stoi))
         if token in stoi:
             vocab_vectors[i][:] = vectors[stoi[token]]

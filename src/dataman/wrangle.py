@@ -60,13 +60,13 @@ class DataManager:
         train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
 
-        seq1_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+        seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
             seq_lengths=train_sent1s_len,
             embed=encoder_embed,
             use_cuda=use_cuda,
         )
-        seq2_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+        seq2_packed_tensor, seq2_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent2s_num,
             seq_lengths=train_sent2s_len,
             embed=decoder_embed,
@@ -77,6 +77,8 @@ class DataManager:
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
             seq2_packed_tensor,  # [batch_size, seq_len]
+            seq1_idx_unsort,
+            seq2_idx_unsort,
             Variable(targets_tensor),  # [batch_size,]
         )
 
@@ -93,13 +95,13 @@ class DataManager:
         dev_sent2s_len = self.dev_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
 
-        seq1_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+        seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent1s_num,
             seq_lengths=dev_sent1s_len,
             embed=encoder_embed,
             use_cuda=use_cuda,
         )
-        seq2_packed_tensor = self.vocab.get_packedseq_from_sent_batch(
+        seq2_packed_tensor, seq2_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent2s_num,
             seq_lengths=dev_sent2s_len,
             embed=decoder_embed,
@@ -110,6 +112,8 @@ class DataManager:
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
             seq2_packed_tensor,  # [batch_size, seq_len]
+            seq1_idx_unsort,
+            seq2_idx_unsort,
             Variable(targets_tensor),  # [batch_size,]
         )
 

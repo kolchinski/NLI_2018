@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+import torch.nn.functional as F
 
 
 class Bottle(nn.Module):
@@ -35,7 +36,8 @@ class Encoder(nn.Module):
 
     def forward(self, inputs, hidden, batch_size):
         outputs, (ht, ct) = self.rnn(inputs, hidden)
-        return ht[-1] if not self.config.bidirectional else ht[-2:].transpose(0, 1).contiguous().view(batch_size, -1)
+        return outputs
+        # return ht[-1] if not self.config.bidirectional else ht[-2:].transpose(0, 1).contiguous().view(batch_size, -1)
 
 
 class SNLIClassifier(nn.Module):
@@ -49,24 +51,35 @@ class SNLIClassifier(nn.Module):
         self.encoder = Encoder(config)
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
-        seq_in_size = 2*config.hidden_size
+        seq_in_size = 2 * config.hidden_size
         if self.config.bidirectional:
             seq_in_size *= 2
-        lin_config = [seq_in_size]*2
         self.out = nn.Sequential(
-            Linear(*lin_config),
-            self.relu,
-            self.dropout,
-            Linear(*lin_config),
-            self.relu,
-            self.dropout,
-            Linear(*lin_config),
-            self.relu,
-            self.dropout,
-            Linear(seq_in_size, config.d_out))
+            nn.Linear(seq_in_size, 512),
+            nn.Linear(512, config.d_out),
+        )
+        # lin_config = [seq_in_size] * 2
+        # self.out = nn.Sequential(
+        #     Linear(*lin_config),
+        #     self.relu,
+        #     self.dropout,
+        #     Linear(*lin_config),
+        #     self.relu,
+        #     self.dropout,
+        #     Linear(*lin_config),
+        #     self.relu,
+        #     self.dropout,
+        #     Linear(seq_in_size, config.d_out))
 
-    def forward(self, encoder_input, decoder_input,
-                encoder_init_hidden, batch_size):
+    def forward(
+        self,
+        encoder_input,
+        encoder_unsort,
+        decoder_input,
+        decoder_unsort,
+        encoder_init_hidden,
+        batch_size
+    ):
         # encoder_input, decoder_input should be packed sequences
         # (already embedded)
         # prem_embed = self.embed(encoder_input)
@@ -87,10 +100,24 @@ class SNLIClassifier(nn.Module):
             hidden=encoder_init_hidden,
             batch_size=batch_size
         )
+        premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
+        premise = premise.index_select(1, encoder_unsort)
         hypothesis = self.encoder(
             inputs=hypo_embed,
             hidden=encoder_init_hidden,
             batch_size=batch_size
         )
-        scores = self.out(torch.cat([premise, hypothesis], 1))
-        return scores
+        hypothesis = nn.utils.rnn.pad_packed_sequence(hypothesis)[0]
+        hypothesis = hypothesis.index_select(1, decoder_unsort)
+
+        premise_maxpool = torch.max(premise, 0)[0]
+        hypothesis_maxpool = torch.max(hypothesis, 0)[0]
+
+        scores = self.out(torch.cat([
+            premise_maxpool,
+            hypothesis_maxpool,
+        ], 1))  # [batch_size, 3]
+
+        softmax_outputs = F.log_softmax(scores, dim=0)  # [batch_size, 3]
+
+        return softmax_outputs

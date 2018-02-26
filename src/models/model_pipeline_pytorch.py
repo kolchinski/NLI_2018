@@ -36,14 +36,14 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
 
     while batch_idx < args.batches_per_epoch:
         # sample batch
-        try:
-            sent1, sent2, targets = di.sample_train_batch(
+        if False:
+            sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
                 encoder_embed=model.encoder.embedding,
                 decoder_embed=model.decoder.embedding,
                 use_cuda=args.cuda,
             )
-        except AttributeError:
-            sent1, sent2, targets = di.sample_train_batch(
+        else:
+            sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
                 encoder_embed=model.embed,
                 decoder_embed=model.embed,
                 use_cuda=args.cuda,
@@ -67,7 +67,9 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         softmax_outputs = model(
             encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
+            encoder_unsort=unsort1,
             decoder_input=sent2,
+            decoder_unsort=unsort2,
             batch_size=args.batch_size,
         )
         loss = loss_criterion(softmax_outputs, targets)
@@ -125,7 +127,7 @@ def test(model, epoch, di, args, loss_criterion):
 
     while batch_idx < args.test_batches_per_epoch:
         # sample batch
-        sent1, sent2, targets = di.sample_dev_batch(
+        sent1, sent2, unsort1, unsort2, targets = di.sample_dev_batch(
             encoder_embed=model.encoder.embedding,
             decoder_embed=model.decoder.embedding,
             use_cuda=args.cuda,

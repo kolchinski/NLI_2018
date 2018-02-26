@@ -194,7 +194,7 @@ def test(model, epoch, di, args, loss_criterion):
     return losses.avg, acc.avg
 
 
-def save_checkpoint(state, is_best, checkpoint='checkpoint',
+def save_checkpoint(state, epoch, dev_acc, checkpoint='checkpoint',
                     filename='checkpoint.pth.tar'):
     filepath = os.path.join(checkpoint, filename)
     if not os.path.exists(checkpoint):
@@ -204,11 +204,13 @@ def save_checkpoint(state, is_best, checkpoint='checkpoint',
     else:
         print("Checkpoint Directory exists! ")
     torch.save(state, filepath)
-    if is_best:
-        shutil.copyfile(
-            filepath,
-            os.path.join(checkpoint, 'model_best.pth.tar'),
-        )
+    shutil.copyfile(
+        filepath,
+        os.path.join(
+            checkpoint,
+            'model_epoch{}_{:.1f}.pth.tar'.format(epoch, dev_acc),
+        ),
+    )
 
 
 def load_checkpoint(model, checkpoint='checkpoint',

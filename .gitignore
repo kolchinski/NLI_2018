@@ -6,3 +6,5 @@ static/glove/*
 *.pyc
 *DS_Store*
 static/glove
+static/snli_1.0/*.labels
+static/snli_1.0/*.s*

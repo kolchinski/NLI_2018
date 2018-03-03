@@ -2,9 +2,9 @@
 *pycache*
 static/snli_1.0/snli_1.0_train.*
 static/snli_1.0/*.train
-static/glove/*
+static/glove/*.txt
+static/glove/*.word2vec
 *.pyc
 *DS_Store*
-static/glove
 static/snli_1.0/*.labels
 static/snli_1.0/*.s*

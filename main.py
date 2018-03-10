@@ -96,3 +96,5 @@ if __name__ == "__main__":
             state['lr'] *= args.learning_rate_decay
         else:
             best_train_loss = train_loss
+            model_pipeline_pytorch.save_checkpoint(
+                state=state, epoch=epoch, dev_acc=dev_acc)

@@ -19,29 +19,48 @@ NLILabelDict = {
 }
 
 class DataManager:
-    def __init__(self, args):
+    def __init__(self, args, use_tok=True):
         self.max_len = args.max_length
         self.vocab = vocab_pytorch.Vocab()
         self.batch_size = args.batch_size
-        print('loading train..')
-        (
-            self.train_sent1s_num, self.train_sent1s_len,
-            self.train_sent2s_num, self.train_sent2s_len,
-            self.train_ys, self.train_size
-        ) = self.load_data(constants.FULL_TRAIN_DATA_PATH, train=True)
-        print('loading dev..')
-        (
-            self.dev_sent1s_num, self.dev_sent1s_len,
-            self.dev_sent2s_num, self.dev_sent2s_len,
-            self.dev_ys, self.dev_size
-        ) = self.load_data(constants.DEV_DATA_PATH)
-        print('loading test..')
-        (
-            self.test_sent1s_num, self.test_sent1s_len,
-            self.test_sent2s_num, self.test_sent2s_len,
-            self.test_ys, self.test_size
-        ) = self.load_data(constants.TEST_DATA_PATH)
-
+        if not use_tok:
+            print('loading train..')
+            (
+                self.train_sent1s_num, self.train_sent1s_len,
+                self.train_sent2s_num, self.train_sent2s_len,
+                self.train_ys, self.train_size
+            ) = self.load_data(constants.FULL_TRAIN_DATA_PATH, train=True)
+            print('loading dev..')
+            (
+                self.dev_sent1s_num, self.dev_sent1s_len,
+                self.dev_sent2s_num, self.dev_sent2s_len,
+                self.dev_ys, self.dev_size
+            ) = self.load_data(constants.DEV_DATA_PATH)
+            print('loading test..')
+            (
+                self.test_sent1s_num, self.test_sent1s_len,
+                self.test_sent2s_num, self.test_sent2s_len,
+                self.test_ys, self.test_size
+            ) = self.load_data(constants.TEST_DATA_PATH)
+        else:
+            print('loading train..')
+            (
+                self.train_sent1s_num, self.train_sent1s_len,
+                self.train_sent2s_num, self.train_sent2s_len,
+                self.train_ys, self.train_size
+            ) = self.load_tok_data(constants.SMALL_TRAIN_TOK_DATA_PATH, train=True)
+            print('loading dev..')
+            (
+                self.dev_sent1s_num, self.dev_sent1s_len,
+                self.dev_sent2s_num, self.dev_sent2s_len,
+                self.dev_ys, self.dev_size
+            ) = self.load_tok_data(constants.DEV_TOK_DATA_PATH)
+            print('loading test..')
+            (
+                self.test_sent1s_num, self.test_sent1s_len,
+                self.test_sent2s_num, self.test_sent2s_len,
+                self.test_ys, self.test_size
+            ) = self.load_tok_data(constants.TEST_TOK_DATA_PATH)
         self.curr_batch_train = 0
         self.curr_batch_dev = 0
         self.curr_batch_test = 0
@@ -150,6 +169,69 @@ class DataManager:
         n_rows = len(sent1s)
         print('read {} pairs'.format(n_rows))
         if train:
+            print('vocab size: {}'.format(self.vocab.n_words))
+
+        targets = torch.from_numpy(
+            np.array(targets, dtype=np.int64)  # expect LongTensor
+        )
+
+        print('numberizing')
+        sent1s_num = [self.vocab.numberize_sentence(s) for s in sent1s]
+        sent2s_num = [self.vocab.numberize_sentence(s) for s in sent2s]
+        print('done.')
+
+        # load numberized into tensors
+        sent1_bin_tensor, sent1_len_tensor = self.get_numberized_tensor(
+            sent1s_num)
+        sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
+            sent2s_num)
+
+        return (
+            sent1_bin_tensor, sent1_len_tensor,
+            sent2_bin_tensor, sent2_len_tensor,
+            targets, n_rows
+        )
+
+    def load_tok_data(self, path, train=False):
+        sent1s, sent2s, targets = [], [], []
+        path_label = path+'labels'
+        path_s1 = path+'s1'
+        path_s2 = path+'s2'
+        with open(path_label) as f:
+            lines = f.readlines()
+            n_rows = len(lines)
+            for l in lines:
+                lab = l.rstrip()
+                targets.append(NLILabelDict[lab])
+        with open(path_s1) as f:
+            lines = f.readlines()
+            if len(lines) != n_rows:
+                raise RuntimeError(
+                    "Sent1 tokens has {} lines, but labels have {} lines. They must have "
+                    "the same number of lines.".format(len(lines), n_rows))
+            for l in lines:
+                sent1 = l.rstrip().lower()
+                sent1s.append(sent1)
+                if True:  # if train:
+                    # this is slightly cheating (adding dev vocab)
+                    # but convenient so we dont load the entire GloVe vocab
+                    self.vocab.addSentence(sent1)
+        with open(path_s2) as f:
+            lines = f.readlines()
+            if len(lines) != n_rows:
+                raise RuntimeError(
+                    "Sent2 tokens has {} lines, but labels have {} lines. They must have "
+                    "the same number of lines.".format(len(lines), n_rows))
+            for l in lines:
+                sent2 = l.rstrip().lower()
+                sent2s.append(sent2)
+                if True:  # if train:
+                    # this is slightly cheating (adding dev vocab)
+                    # but convenient so we dont load the entire GloVe vocab
+                    self.vocab.addSentence(sent2)
+
+        print('read {} pairs'.format(n_rows))
+        if True:
             print('vocab size: {}'.format(self.vocab.n_words))
 
         targets = torch.from_numpy(

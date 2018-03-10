@@ -1,7 +1,7 @@
 import sys
 sys.path.append('./src')
 import torch.nn as nn
-
+import numpy as np
 import dataman.wrangle as wrangle
 from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
@@ -18,21 +18,22 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
-    'lr': 0.01,
+    'lr': 0.05,
+    'learning_rate_decay': 0.9,
     'max_length': 100,
     'epochs': 5,
     'batch_size': 256,
     'batches_per_epoch': 5000,
-    'test_batches_per_epoch': 200,
+    'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 512,
+    'hidden_size': 2048,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'projection': None,
     'd_proj': None,
-    'dp_ratio': 0.3,
+    'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'cuda': torch.cuda.is_available(),
 })
@@ -40,7 +41,7 @@ state = {k: v for k, v in args.items()}
 
 
 if __name__ == "__main__":
-    print('use cuda: {}'.format(args.cuda))
+    print(args)
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
@@ -58,9 +59,12 @@ if __name__ == "__main__":
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
     best_dev_acc = 0
+    best_train_loss = np.infty
 
     for epoch in range(args.epochs):
-        optimizer = optim.Adam(
+        dm.shuffle_train_data()
+
+        optimizer = optim.SGD(
             [param for param in model.net.parameters() if param.requires_grad],
             lr=state['lr'])
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
@@ -88,3 +92,7 @@ if __name__ == "__main__":
             best_dev_acc = dev_acc
             print('Saving to checkpoint')
             # TODO
+        if train_loss > best_train_loss:
+            state['lr'] *= args.learning_rate_decay
+        else:
+            best_train_loss = train_loss

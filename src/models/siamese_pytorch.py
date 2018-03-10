@@ -30,7 +30,10 @@ class Encoder(nn.Module):
                         bidirectional=config.bidirectional)
 
     def initHidden(self, batch_size):
-        state_shape = 1, batch_size, self.config.hidden_size
+        if self.config.bidirectional:
+            state_shape = 2, batch_size, self.config.hidden_size
+        else:
+            state_shape = 1, batch_size, self.config.hidden_size
         h0 = c0 = Variable(torch.zeros(state_shape))
         return (h0, c0)
 
@@ -46,12 +49,15 @@ class SNLIClassifier(nn.Module):
         super(SNLIClassifier, self).__init__()
         self.config = config
         self.embed = nn.Embedding(config.n_embed, config.embedding_size)
+        self.embed.weight.requires_grad = False
+
         if config.projection:
             self.projection = Linear(config.embedding_size, config.d_proj)
         self.encoder = Encoder(config)
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
-        seq_in_size = 2 * config.hidden_size
+
+        seq_in_size = 4 * config.hidden_size
         if self.config.bidirectional:
             seq_in_size *= 2
         self.out = nn.Sequential(
@@ -116,6 +122,8 @@ class SNLIClassifier(nn.Module):
         scores = self.out(torch.cat([
             premise_maxpool,
             hypothesis_maxpool,
+            torch.abs(premise_maxpool - hypothesis_maxpool),
+            premise_maxpool * hypothesis_maxpool,
         ], 1))  # [batch_size, 3]
 
         softmax_outputs = F.log_softmax(scores, dim=0)  # [batch_size, 3]

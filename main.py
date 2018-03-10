@@ -21,7 +21,7 @@ args = dotdict({
     'lr': 0.05,
     'learning_rate_decay': 0.9,
     'max_length': 100,
-    'epochs': 5,
+    'epochs': 10,
     'batch_size': 64,
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
@@ -92,7 +92,8 @@ if __name__ == "__main__":
             print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
             best_dev_acc = dev_acc
             print('Saving to checkpoint')
-            # TODO
+            model_pipeline_pytorch.save_checkpoint(
+                state=state, epoch=epoch, dev_acc=dev_acc)
         if train_loss > best_train_loss:
             state['lr'] *= args.learning_rate_decay
         else:

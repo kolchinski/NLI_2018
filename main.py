@@ -22,19 +22,20 @@ args = dotdict({
     'learning_rate_decay': 0.9,
     'max_length': 100,
     'epochs': 5,
-    'batch_size': 256,
-    'batches_per_epoch': 5000,
+    'batch_size': 64,
+    'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 2048,
     'n_layers': 1,
-    'bidirectional': True,
+    'bidirectional': False,
     'embedding_size': 300,
     'fix_emb': True,
     'projection': None,
     'd_proj': None,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
+    'max_norm': 5,
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -96,5 +97,3 @@ if __name__ == "__main__":
             state['lr'] *= args.learning_rate_decay
         else:
             best_train_loss = train_loss
-            model_pipeline_pytorch.save_checkpoint(
-                state=state, epoch=epoch, dev_acc=dev_acc)

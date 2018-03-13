@@ -55,6 +55,8 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             model = model.cuda()
             targets = targets.cuda(async=True)
             if args.encoder_type == 'transformer':
+                sent1 = sent1.cuda()
+                sent2 = sent2.cuda()
                 sent1_posembinput = sent1_posembinput.cuda()
                 sent2_posembinput = sent2_posembinput.cuda()
             if args.encoder_type == 'rnn':

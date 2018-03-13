@@ -54,6 +54,9 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
+            if args.encoder_type == 'transformer':
+                sent1_posembinput = sent1_posembinput.cuda()
+                sent2_posembinput = sent2_posembinput.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
@@ -165,10 +168,11 @@ def test(model, epoch, di, args, loss_criterion):
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
-            if len(encoder_init_hidden):
-                encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
-            else:
-                encoder_init_hidden = encoder_init_hidden.cuda()
+            if args.encoder_type == 'rnn':
+                if len(encoder_init_hidden):
+                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                else:
+                    encoder_init_hidden = encoder_init_hidden.cuda()
 
         # measure data loading time
         data_time.update(time.time() - end)

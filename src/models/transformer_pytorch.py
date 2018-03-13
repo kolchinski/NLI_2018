@@ -257,7 +257,7 @@ class Encoder(nn.Module):
         if return_attns:
             enc_slf_attns = []
 
-        enc_output = enc_input
+        enc_output = enc_input  # [batch_size, seq_len, embed_size]
         enc_slf_attn_mask = get_attn_padding_mask(src_seq, src_seq)
         for enc_layer in self.layer_stack:
             enc_output, enc_slf_attn = enc_layer(
@@ -265,7 +265,7 @@ class Encoder(nn.Module):
             if return_attns:
                 enc_slf_attns += [enc_slf_attn]
 
-        enc_output = enc_output.transpose((1, 0, 2))  # [seq_len, batch_size, embed_size]
+        enc_output = enc_output.transpose(1, 0, 2)  # [seq_len, batch_size, embed_size]
 
         if return_attns:
             return enc_output, enc_slf_attns

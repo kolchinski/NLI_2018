@@ -153,7 +153,7 @@ def test(model, epoch, di, args, loss_criterion):
 
     while batch_idx < args.test_batches_per_epoch:
         # sample batch
-        if False:
+        if args.encoder_type == 'transformer':
             sent1, sent1_posembinput, sent2, sent2_posembinput, targets = \
                 di.sample_dev_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
@@ -170,6 +170,11 @@ def test(model, epoch, di, args, loss_criterion):
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
+            if args.encoder_type == 'transformer':
+                sent1 = sent1.cuda()
+                sent2 = sent2.cuda()
+                sent1_posembinput = sent1_posembinput.cuda()
+                sent2_posembinput = sent2_posembinput.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]

@@ -79,6 +79,8 @@ class DataManager:
         train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
 
+        self.curr_batch_train = (self.curr_batch_train + 1) % self.num_batch_train
+
         if self.config.encoder_type == 'transformer':
             return (
                 Variable(train_sent1s_num),
@@ -100,7 +102,6 @@ class DataManager:
             embed=decoder_embed,
             use_cuda=use_cuda,
         )
-        self.curr_batch_train = (self.curr_batch_train + 1) % self.num_batch_train
 
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
@@ -112,9 +113,9 @@ class DataManager:
 
     def sample_dev_batch(
         self,
-        encoder_embed,
-        decoder_embed,
         use_cuda,
+        encoder_embed=None,
+        decoder_embed=None,
     ):
         sample_idx = self.curr_batch_dev * self.batch_size
         dev_sent1s_num = self.dev_sent1s_num[sample_idx: sample_idx + self.batch_size]
@@ -126,6 +127,8 @@ class DataManager:
         dev_sent2s_pos_embedinput = self.dev_sent1s_pos_embedinput[
             sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
+
+        self.curr_batch_dev = (self.curr_batch_dev + 1) % self.num_batch_dev
 
         if self.config.encoder_type == 'transformer':
             return (  # do not train positional embeddings (volatile=True)
@@ -148,7 +151,6 @@ class DataManager:
             embed=decoder_embed,
             use_cuda=use_cuda,
         )
-        self.curr_batch_dev = (self.curr_batch_dev + 1) % self.num_batch_dev
 
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]

@@ -46,7 +46,7 @@ class SNLIClassifier(nn.Module):
         if self.config.fix_emb:
             self.embed.weight.requires_grad = False
 
-        if self.encoder_type == 'transformer':
+        if config.encoder_type == 'transformer':
             self.encoder = transformer_pytorch.Encoder(
                 n_src_vocab=config.n_embed, n_max_seq=config.max_length
             )

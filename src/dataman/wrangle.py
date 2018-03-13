@@ -51,6 +51,17 @@ class DataManager:
         self.num_batch_dev = self.dev_size // self.batch_size
         self.num_batch_test = self.test_size // self.batch_size
 
+    def shuffle_train_data(self):
+        permutation_np = np.random.permutation(len(self.train_ys))
+        permutation = torch.LongTensor(permutation_np)
+        self.train_sent1s_num = self.train_sent1s_num.index_select(0, permutation)
+        self.train_sent1s_len = self.train_sent1s_len.index_select(0, permutation)
+        self.train_sent2s_num = self.train_sent2s_num.index_select(0, permutation)
+        self.train_sent2s_len = self.train_sent2s_len.index_select(0, permutation)
+        self.train_ys = self.train_ys[permutation]
+
+        self.curr_batch_train = 0
+
     def sample_train_batch(
         self,
         use_cuda,

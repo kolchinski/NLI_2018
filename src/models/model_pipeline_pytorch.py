@@ -37,8 +37,8 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
     while batch_idx < args.batches_per_epoch:
         # sample batch
         if args.encoder_type == 'transformer':
-            sent1, sent1_posembinput, sent2, sent2_posembinput = di.sample_train_batch(
-                use_cuda=args.use_cuda)
+            sent1, sent1_posembinput, sent2, sent2_posembinput, targets = \
+                di.sample_train_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
         else:
             sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
@@ -147,19 +147,19 @@ def test(model, epoch, di, args, loss_criterion):
     while batch_idx < args.test_batches_per_epoch:
         # sample batch
         if False:
-            sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
-                encoder_embed=model.encoder.embedding,
-                decoder_embed=model.decoder.embedding,
-                use_cuda=args.cuda,
-            )
+            sent1, sent1_posembinput, sent2, sent2_posembinput, targets = \
+                di.sample_dev_batch(use_cuda=args.cuda)
+            unsort1, unsort2 = None, None
+            encoder_init_hidden = None
         else:
-            sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
+            sent1, sent2, unsort1, unsort2, targets = di.sample_dev_batch(
                 encoder_embed=model.embed,
                 decoder_embed=model.embed,
                 use_cuda=args.cuda,
             )
-        encoder_init_hidden = model.encoder.initHidden(
-            batch_size=args.batch_size)
+            sent1_posembinput, sent2_posembinput = None, None
+            encoder_init_hidden = model.encoder.initHidden(
+                batch_size=args.batch_size)
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
@@ -175,8 +175,10 @@ def test(model, epoch, di, args, loss_criterion):
         softmax_outputs = model(
             encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent1,
+            encoder_pos_emb_input=sent1_posembinput,
             encoder_unsort=unsort1,
             decoder_input=sent2,
+            decoder_pos_emb_input=sent2_posembinput,
             decoder_unsort=unsort2,
             batch_size=args.batch_size,
         )

@@ -81,9 +81,6 @@ class SNLIClassifier(nn.Module):
         prem_embed = encoder_input
         hypo_embed = decoder_input
 
-        if self.config.projection:
-            prem_embed = self.relu(self.projection(prem_embed))
-            hypo_embed = self.relu(self.projection(hypo_embed))
         if self.config.encoder_type == 'transformer':
             premise = self.encoder(
                 src_seq=encoder_input,

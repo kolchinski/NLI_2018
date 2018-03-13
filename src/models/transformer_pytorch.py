@@ -265,7 +265,7 @@ class Encoder(nn.Module):
             if return_attns:
                 enc_slf_attns += [enc_slf_attn]
 
-        enc_output = enc_output.transpose(1, 0, 2)  # [seq_len, batch_size, embed_size]
+        enc_output = enc_output.permute(1, 0, 2)  # [seq_len, batch_size, embed_size]
 
         if return_attns:
             return enc_output, enc_slf_attns

@@ -61,10 +61,13 @@ class SNLIClassifier(nn.Module):
         assert len(config.mlp_classif_hidden_size_list) == 2
         self.out = nn.Sequential(
             nn.Linear(seq_in_size, config.mlp_classif_hidden_size_list[0]),
+            self.dropout,
             self.relu,
             nn.Linear(config.mlp_classif_hidden_size_list[0], config.mlp_classif_hidden_size_list[1]),
+            self.dropout,
             self.relu,
             nn.Linear(config.mlp_classif_hidden_size_list[1], config.d_out),
+            self.dropout,
         )
 
     def forward(
@@ -108,7 +111,7 @@ class SNLIClassifier(nn.Module):
             hypothesis = nn.utils.rnn.pad_packed_sequence(hypothesis)[0]
             hypothesis = hypothesis.index_select(1, decoder_unsort)
 
-        premise_maxpool = torch.max(premise, 0)[0]
+        premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]
         hypothesis_maxpool = torch.max(hypothesis, 0)[0]
 
         scores = self.out(torch.cat([

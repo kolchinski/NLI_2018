@@ -40,6 +40,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             sent1, sent1_posembinput, sent2, sent2_posembinput, targets = \
                 di.sample_train_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
+            encoder_init_hidden = None
         else:
             sent1, sent2, unsort1, unsort2, targets = di.sample_train_batch(
                 encoder_embed=model.embed,
@@ -47,8 +48,8 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
                 use_cuda=args.cuda,
             )
             sent1_posembinput, sent2_posembinput = None, None
-        encoder_init_hidden = model.encoder.initHidden(
-            batch_size=args.batch_size)
+            encoder_init_hidden = model.encoder.initHidden(
+                batch_size=args.batch_size)
 
         if args.cuda:
             model = model.cuda()

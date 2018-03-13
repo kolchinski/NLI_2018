@@ -8,8 +8,6 @@ import torch
 from torch.autograd import Variable
 import models.vocab_pytorch as vocab_pytorch
 
-np.random.seed(0)
-
 logger = logging.getLogger(__name__)
 
 NLILabelDict = {
@@ -20,7 +18,8 @@ NLILabelDict = {
 
 class DataManager:
     def __init__(self, args, use_tok=True):
-        self.max_len = args.max_length
+        self.config = args
+        self.max_len = self.config.max_length
         self.vocab = vocab_pytorch.Vocab()
         self.batch_size = args.batch_size
         if not use_tok:
@@ -68,17 +67,6 @@ class DataManager:
         self.num_batch_dev = self.dev_size // self.batch_size
         self.num_batch_test = self.test_size // self.batch_size
 
-    def shuffle_train_data(self):
-        permutation_np = np.random.permutation(len(self.train_ys))
-        permutation = torch.LongTensor(permutation_np)
-        self.train_sent1s_num = self.train_sent1s_num.index_select(0, permutation)
-        self.train_sent1s_len = self.train_sent1s_len.index_select(0, permutation)
-        self.train_sent2s_num = self.train_sent2s_num.index_select(0, permutation)
-        self.train_sent2s_len = self.train_sent2s_len.index_select(0, permutation)
-        self.train_ys = self.train_ys[permutation]
-
-        self.curr_batch_train = 0
-
     def sample_train_batch(
         self,
         encoder_embed,
@@ -91,6 +79,15 @@ class DataManager:
         train_sent2s_num = self.train_sent2s_num[sample_idx: sample_idx + self.batch_size]
         train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
+
+        if self.config.encoder_type == 'transformer':
+            return (
+                train_sent1s_num,
+                train_sent1s_len,
+                train_sent2s_num,
+                train_sent2s_len,
+                targets_tensor,
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
@@ -126,6 +123,15 @@ class DataManager:
         dev_sent2s_num = self.dev_sent2s_num[sample_idx: sample_idx + self.batch_size]
         dev_sent2s_len = self.dev_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
+
+        if self.config.encoder_type == 'transformer':
+            return (
+                dev_sent1s_num,
+                dev_sent1s_len,
+                dev_sent2s_num,
+                dev_sent2s_len,
+                targets_tensor,
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent1s_num,

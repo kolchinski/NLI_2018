@@ -227,10 +227,13 @@ class Encoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''
 
     def __init__(  # n_layers=6
-            self, n_src_vocab, n_max_seq, n_layers=2, n_head=8, d_k=64, d_v=64,
+            self, n_src_vocab, n_max_seq, src_word_emb,
+            n_layers=2, n_head=8, d_k=64, d_v=64,
             d_word_vec=300, d_model=300, d_inner_hid=1024, dropout=0.1):
 
         super(Encoder, self).__init__()
+
+        self.src_word_emb = src_word_emb
 
         n_position = n_max_seq + 1
         self.n_max_seq = n_max_seq
@@ -240,9 +243,6 @@ class Encoder(nn.Module):
             n_position, d_word_vec, padding_idx=PAD_token)
         self.position_enc.weight.data = position_encoding_init(
             n_position, d_word_vec)
-
-        self.src_word_emb = nn.Embedding(
-            n_src_vocab, d_word_vec, padding_idx=PAD_token)
 
         self.layer_stack = nn.ModuleList([EncoderLayer(
                 d_model, d_inner_hid, n_head, d_k, d_v, dropout=dropout)

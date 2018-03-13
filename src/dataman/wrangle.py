@@ -207,11 +207,11 @@ class DataManager:
                 [pos + 1 if w != vocab_pytorch.PAD_token else 0
                  for pos, w in enumerate(sent)]
                 for sent in sents
-            ])
+            ]).transpose()
             pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
             return pos_embedinput_tensor
 
-        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s)  # [batch_size, max_len]
+        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s)  # [max_len, batch_size]
         sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s)
 
         targets = torch.from_numpy(

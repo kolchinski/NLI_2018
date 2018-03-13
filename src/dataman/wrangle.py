@@ -69,9 +69,9 @@ class DataManager:
 
     def sample_train_batch(
         self,
-        encoder_embed,
-        decoder_embed,
         use_cuda,
+        encoder_embed=None,
+        decoder_embed=None,
     ):
         sample_idx = self.curr_batch_train * self.batch_size
         train_sent1s_num = self.train_sent1s_num[sample_idx: sample_idx + self.batch_size]

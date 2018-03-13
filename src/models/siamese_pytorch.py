@@ -70,8 +70,10 @@ class SNLIClassifier(nn.Module):
     def forward(
         self,
         encoder_input,
+        encoder_input_len,
         encoder_unsort,
         decoder_input,
+        decoder_input_len,
         decoder_unsort,
         encoder_init_hidden,
         batch_size
@@ -82,20 +84,32 @@ class SNLIClassifier(nn.Module):
         if self.config.projection:
             prem_embed = self.relu(self.projection(prem_embed))
             hypo_embed = self.relu(self.projection(hypo_embed))
-        premise = self.encoder(
-            inputs=prem_embed,
-            hidden=encoder_init_hidden,
-            batch_size=batch_size
-        )
-        premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
-        premise = premise.index_select(1, encoder_unsort)
-        hypothesis = self.encoder(
-            inputs=hypo_embed,
-            hidden=encoder_init_hidden,
-            batch_size=batch_size
-        )
-        hypothesis = nn.utils.rnn.pad_packed_sequence(hypothesis)[0]
-        hypothesis = hypothesis.index_select(1, decoder_unsort)
+        if self.config.encoder_type == 'transformer':
+            premise = self.encoder(
+                src_seq=encoder_input,
+                src_pos=encoder_input_len,
+            )
+        else:
+            premise = self.encoder(
+                inputs=prem_embed,
+                hidden=encoder_init_hidden,
+                batch_size=batch_size
+            )
+            premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
+            premise = premise.index_select(1, encoder_unsort)
+        if self.config.encoder_type == 'transformer':
+            hypothesis = self.encoder(
+                src_seq=decoder_input,
+                src_pos=decoder_input_len,
+            )
+        else:
+            hypothesis = self.encoder(
+                inputs=hypo_embed,
+                hidden=encoder_init_hidden,
+                batch_size=batch_size
+            )
+            hypothesis = nn.utils.rnn.pad_packed_sequence(hypothesis)[0]
+            hypothesis = hypothesis.index_select(1, decoder_unsort)
 
         premise_maxpool = torch.max(premise, 0)[0]
         hypothesis_maxpool = torch.max(hypothesis, 0)[0]

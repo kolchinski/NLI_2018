@@ -81,11 +81,11 @@ class DataManager:
 
         if self.config.encoder_type == 'transformer':
             return (
-                train_sent1s_num,
-                train_sent1s_pos_embedinput,
-                train_sent2s_num,
-                train_sent2s_pos_embedinput,
-                targets_tensor,
+                Variable(train_sent1s_num),
+                Variable(train_sent1s_pos_embedinput),
+                Variable(train_sent2s_num),
+                Variable(train_sent2s_pos_embedinput),
+                Variable(targets_tensor),
             )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
@@ -128,12 +128,12 @@ class DataManager:
         targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
 
         if self.config.encoder_type == 'transformer':
-            return (
-                dev_sent1s_num,
-                dev_sent1s_pos_embedinput,
-                dev_sent2s_num,
-                dev_sent2s_pos_embedinput,
-                targets_tensor,
+            return (  # do not train positional embeddings (volatile=True)
+                Variable(dev_sent1s_num),
+                Variable(dev_sent1s_pos_embedinput, volatile=True),
+                Variable(dev_sent2s_num),
+                Variable(dev_sent2s_pos_embedinput, volatile=True),
+                Variable(targets_tensor),
             )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
@@ -208,8 +208,7 @@ class DataManager:
                  for pos, w in enumerate(sent)]
                 for sent in sents
             ])
-            pos_embedinput_tensor = Variable(
-                torch.LongTensor(pos_embedinput_arr), volatile=train)
+            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
             return pos_embedinput_tensor
 
         sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s)  # [batch_size, max_len]

@@ -70,10 +70,10 @@ class SNLIClassifier(nn.Module):
     def forward(
         self,
         encoder_input,
-        encoder_input_len,
+        encoder_pos_emb_input,
         encoder_unsort,
         decoder_input,
-        decoder_input_len,
+        decoder_pos_emb_input,
         decoder_unsort,
         encoder_init_hidden,
         batch_size
@@ -87,7 +87,7 @@ class SNLIClassifier(nn.Module):
         if self.config.encoder_type == 'transformer':
             premise = self.encoder(
                 src_seq=encoder_input,
-                src_pos=encoder_input_len,
+                src_pos=encoder_pos_emb_input,
             )
         else:
             premise = self.encoder(
@@ -100,7 +100,7 @@ class SNLIClassifier(nn.Module):
         if self.config.encoder_type == 'transformer':
             hypothesis = self.encoder(
                 src_seq=decoder_input,
-                src_pos=decoder_input_len,
+                src_pos=decoder_pos_emb_input,
             )
         else:
             hypothesis = self.encoder(

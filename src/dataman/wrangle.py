@@ -8,8 +8,6 @@ import torch
 from torch.autograd import Variable
 import models.vocab_pytorch as vocab_pytorch
 
-np.random.seed(0)
-
 logger = logging.getLogger(__name__)
 
 NLILabelDict = {
@@ -19,48 +17,33 @@ NLILabelDict = {
 }
 
 class DataManager:
-    def __init__(self, args, use_tok=True):
-        self.max_len = args.max_length
+
+    def __init__(self, args):
+        self.config = args
+        self.max_len = self.config.max_length
         self.vocab = vocab_pytorch.Vocab()
         self.batch_size = args.batch_size
-        if not use_tok:
-            print('loading train..')
-            (
-                self.train_sent1s_num, self.train_sent1s_len,
-                self.train_sent2s_num, self.train_sent2s_len,
-                self.train_ys, self.train_size
-            ) = self.load_data(constants.FULL_TRAIN_DATA_PATH, train=True)
-            print('loading dev..')
-            (
-                self.dev_sent1s_num, self.dev_sent1s_len,
-                self.dev_sent2s_num, self.dev_sent2s_len,
-                self.dev_ys, self.dev_size
-            ) = self.load_data(constants.DEV_DATA_PATH)
-            print('loading test..')
-            (
-                self.test_sent1s_num, self.test_sent1s_len,
-                self.test_sent2s_num, self.test_sent2s_len,
-                self.test_ys, self.test_size
-            ) = self.load_data(constants.TEST_DATA_PATH)
-        else:
-            print('loading train..')
-            (
-                self.train_sent1s_num, self.train_sent1s_len,
-                self.train_sent2s_num, self.train_sent2s_len,
-                self.train_ys, self.train_size
-            ) = self.load_tok_data(constants.FULL_TRAIN_TOK_DATA_PATH, train=True)
-            print('loading dev..')
-            (
-                self.dev_sent1s_num, self.dev_sent1s_len,
-                self.dev_sent2s_num, self.dev_sent2s_len,
-                self.dev_ys, self.dev_size
-            ) = self.load_tok_data(constants.DEV_TOK_DATA_PATH)
-            print('loading test..')
-            (
-                self.test_sent1s_num, self.test_sent1s_len,
-                self.test_sent2s_num, self.test_sent2s_len,
-                self.test_ys, self.test_size
-            ) = self.load_tok_data(constants.TEST_TOK_DATA_PATH)
+        print('loading train..')
+        (
+            self.train_sent1s_num, self.train_sent1s_len,
+            self.train_sent2s_num, self.train_sent2s_len,
+            self.train_sent1s_pos_embedinput, self.train_sent2s_pos_embedinput,
+            self.train_ys, self.train_size
+        ) = self.load_tok_data(constants.FULL_TRAIN_TOK_DATA_PATH, train=True)
+        print('loading dev..')
+        (
+            self.dev_sent1s_num, self.dev_sent1s_len,
+            self.dev_sent2s_num, self.dev_sent2s_len,
+            self.dev_sent1s_pos_embedinput, self.dev_sent2s_pos_embedinput,
+            self.dev_ys, self.dev_size
+        ) = self.load_tok_data(constants.DEV_TOK_DATA_PATH)
+        print('loading test..')
+        (
+            self.test_sent1s_num, self.test_sent1s_len,
+            self.test_sent2s_num, self.test_sent2s_len,
+            self.test_sent1s_pos_embedinput, self.test_sent2s_pos_embedinput,
+            self.test_ys, self.test_size
+        ) = self.load_tok_data(constants.TEST_TOK_DATA_PATH)
         self.curr_batch_train = 0
         self.curr_batch_dev = 0
         self.curr_batch_test = 0
@@ -81,16 +64,31 @@ class DataManager:
 
     def sample_train_batch(
         self,
-        encoder_embed,
-        decoder_embed,
         use_cuda,
+        encoder_embed=None,
+        decoder_embed=None,
     ):
         sample_idx = self.curr_batch_train * self.batch_size
         train_sent1s_num = self.train_sent1s_num[sample_idx: sample_idx + self.batch_size]
         train_sent1s_len = self.train_sent1s_len[sample_idx: sample_idx + self.batch_size]
+        train_sent1s_pos_embedinput = self.train_sent1s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
+        train_sent2s_pos_embedinput = self.train_sent2s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
         train_sent2s_num = self.train_sent2s_num[sample_idx: sample_idx + self.batch_size]
         train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
+
+        self.curr_batch_train = (self.curr_batch_train + 1) % self.num_batch_train
+
+        if self.config.encoder_type == 'transformer':
+            return (
+                Variable(train_sent1s_num),
+                Variable(train_sent1s_pos_embedinput),
+                Variable(train_sent2s_num),
+                Variable(train_sent2s_pos_embedinput),
+                Variable(targets_tensor),
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
@@ -104,7 +102,6 @@ class DataManager:
             embed=decoder_embed,
             use_cuda=use_cuda,
         )
-        self.curr_batch_train = (self.curr_batch_train + 1) % self.num_batch_train
 
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
@@ -116,16 +113,31 @@ class DataManager:
 
     def sample_dev_batch(
         self,
-        encoder_embed,
-        decoder_embed,
         use_cuda,
+        encoder_embed=None,
+        decoder_embed=None,
     ):
         sample_idx = self.curr_batch_dev * self.batch_size
         dev_sent1s_num = self.dev_sent1s_num[sample_idx: sample_idx + self.batch_size]
         dev_sent1s_len = self.dev_sent1s_len[sample_idx: sample_idx + self.batch_size]
+        dev_sent1s_pos_embedinput = self.dev_sent1s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
         dev_sent2s_num = self.dev_sent2s_num[sample_idx: sample_idx + self.batch_size]
         dev_sent2s_len = self.dev_sent2s_len[sample_idx: sample_idx + self.batch_size]
+        dev_sent2s_pos_embedinput = self.dev_sent1s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.dev_ys[sample_idx: sample_idx + self.batch_size]
+
+        self.curr_batch_dev = (self.curr_batch_dev + 1) % self.num_batch_dev
+
+        if self.config.encoder_type == 'transformer':
+            return (  # do not train positional embeddings (volatile=True)
+                Variable(dev_sent1s_num),
+                Variable(dev_sent1s_pos_embedinput, volatile=True),
+                Variable(dev_sent2s_num),
+                Variable(dev_sent2s_pos_embedinput, volatile=True),
+                Variable(targets_tensor),
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent1s_num,
@@ -139,7 +151,6 @@ class DataManager:
             embed=decoder_embed,
             use_cuda=use_cuda,
         )
-        self.curr_batch_dev = (self.curr_batch_dev + 1) % self.num_batch_dev
 
         return (
             seq1_packed_tensor,  # [batch_size, seq_len]
@@ -149,48 +160,6 @@ class DataManager:
             Variable(targets_tensor),  # [batch_size,]
         )
 
-    def load_data(self, path, train=False):
-        sent1s, sent2s, targets = [], [], []
-        with open(path, 'r') as f:
-            for l in f.readlines():
-                dat = json.loads(l)
-                lab = dat['gold_label']
-                if lab in NLILabelDict:
-                    sent1 = dat['sentence1'].lower()
-                    sent2 = dat['sentence2'].lower()
-                    sent1s.append(sent1)
-                    sent2s.append(sent2)
-                    targets.append(NLILabelDict[lab])
-                    if True:  # if train:
-                    # this is slightly cheating (adding dev vocab)
-                    # but convenient so we dont load the entire GloVe vocab
-                        self.vocab.addSentence(sent1)
-                        self.vocab.addSentence(sent2)
-        n_rows = len(sent1s)
-        print('read {} pairs'.format(n_rows))
-        if train:
-            print('vocab size: {}'.format(self.vocab.n_words))
-
-        targets = torch.from_numpy(
-            np.array(targets, dtype=np.int64)  # expect LongTensor
-        )
-
-        print('numberizing')
-        sent1s_num = [self.vocab.numberize_sentence(s) for s in sent1s]
-        sent2s_num = [self.vocab.numberize_sentence(s) for s in sent2s]
-        print('done.')
-
-        # load numberized into tensors
-        sent1_bin_tensor, sent1_len_tensor = self.get_numberized_tensor(
-            sent1s_num)
-        sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
-            sent2s_num)
-
-        return (
-            sent1_bin_tensor, sent1_len_tensor,
-            sent2_bin_tensor, sent2_len_tensor,
-            targets, n_rows
-        )
 
     def load_tok_data(self, path, train=False):
         sent1s, sent2s, targets = [], [], []
@@ -249,9 +218,24 @@ class DataManager:
         sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
             sent2s_num)
 
+        # positional embeddings
+        def get_pos_embedinputinput(sents):
+            pos_embedinput_arr = np.zeros(shape=(len(sents), self.config.max_length))
+            for i, sent in enumerate(sents):
+                for j, _ in enumerate(sent):
+                    pos_embedinput_arr[i, j] = j + 1
+            print(pos_embedinput_arr.shape)
+            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
+            return pos_embedinput_tensor
+
+        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s_num)  # [batch_size, max_len]
+        sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s_num)
+
+
         return (
             sent1_bin_tensor, sent1_len_tensor,
             sent2_bin_tensor, sent2_len_tensor,
+            sent1_pos_embedinput_tensor, sent2_pos_embedinput_tensor,
             targets, n_rows
         )
 

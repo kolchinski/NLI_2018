@@ -19,20 +19,21 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
-    'encoder_type': 'rnn',
+    'encoder_type': 'transformer',
     'lr': 0.05,
     'learning_rate_decay': 0.9,
     'max_length': 100,
     'epochs': 10,
     'batch_size': 64,
-    'batches_per_epoch': 3000,
+    'batches_per_epoch': 2000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
+    'hidden_size': 300,
+    'embedding_size': 300,
     'n_layers': 1,
     'bidirectional': False,
-    'embedding_size': 300,
     'fix_emb': True,
+    'd_proj': None,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'max_norm': 5,
@@ -94,7 +95,7 @@ if __name__ == "__main__":
             best_dev_acc = dev_acc
             print('Saving to checkpoint')
             model_pipeline_pytorch.save_checkpoint(
-                state=state, epoch=epoch, dev_acc=dev_acc)
+                state=state, is_best=True)
         if train_loss > best_train_loss:
             state['lr'] *= args.learning_rate_decay
         else:

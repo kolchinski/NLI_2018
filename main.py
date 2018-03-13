@@ -18,6 +18,7 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
+    'encoder_type': 'rnn',
     'lr': 0.05,
     'learning_rate_decay': 0.9,
     'max_length': 100,

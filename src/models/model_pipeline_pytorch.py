@@ -54,10 +54,11 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
-            if len(encoder_init_hidden):
-                encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
-            else:
-                encoder_init_hidden = encoder_init_hidden.cuda()
+            if args.encoder_type == 'rnn':
+                if len(encoder_init_hidden):
+                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                else:
+                    encoder_init_hidden = encoder_init_hidden.cuda()
             loss_criterion = loss_criterion.cuda()
 
         # measure data loading timeult

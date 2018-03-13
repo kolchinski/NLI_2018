@@ -226,8 +226,8 @@ class EncoderLayer(nn.Module):
 class Encoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''
 
-    def __init__(
-            self, n_src_vocab, n_max_seq, n_layers=6, n_head=8, d_k=64, d_v=64,
+    def __init__(  # n_layers=6
+            self, n_src_vocab, n_max_seq, n_layers=2, n_head=8, d_k=64, d_v=64,
             d_word_vec=300, d_model=300, d_inner_hid=1024, dropout=0.1):
 
         super(Encoder, self).__init__()
@@ -268,4 +268,4 @@ class Encoder(nn.Module):
         if return_attns:
             return enc_output, enc_slf_attns
         else:
-            return enc_output,
+            return enc_output

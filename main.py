@@ -1,5 +1,6 @@
 import sys
 sys.path.append('./src')
+sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
@@ -32,7 +33,6 @@ args = dotdict({
     'bidirectional': False,
     'embedding_size': 300,
     'fix_emb': True,
-    'd_proj': None,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'max_norm': 5,

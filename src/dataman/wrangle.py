@@ -73,10 +73,10 @@ class DataManager:
         train_sent1s_len = self.train_sent1s_len[sample_idx: sample_idx + self.batch_size]
         train_sent1s_pos_embedinput = self.train_sent1s_pos_embedinput[
             sample_idx: sample_idx + self.batch_size]
-        train_sent2s_num = self.train_sent2s_num[sample_idx: sample_idx + self.batch_size]
-        train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         train_sent2s_pos_embedinput = self.train_sent2s_pos_embedinput[
             sample_idx: sample_idx + self.batch_size]
+        train_sent2s_num = self.train_sent2s_num[sample_idx: sample_idx + self.batch_size]
+        train_sent2s_len = self.train_sent2s_len[sample_idx: sample_idx + self.batch_size]
         targets_tensor = self.train_ys[sample_idx: sample_idx + self.batch_size]
 
         if self.config.encoder_type == 'transformer':
@@ -201,19 +201,6 @@ class DataManager:
         if True:
             print('vocab size: {}'.format(self.vocab.n_words))
 
-        # positional embeddings
-        def get_pos_embedinputinput(sents):
-            pos_embedinput_arr = np.array([
-                [pos + 1 if w != vocab_pytorch.PAD_token else 0
-                 for pos, w in enumerate(sent)]
-                for sent in sents
-            ]).transpose()
-            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
-            return pos_embedinput_tensor
-
-        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s)  # [max_len, batch_size]
-        sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s)
-
         targets = torch.from_numpy(
             np.array(targets, dtype=np.int64)  # expect LongTensor
         )
@@ -228,6 +215,20 @@ class DataManager:
             sent1s_num)
         sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
             sent2s_num)
+
+        # positional embeddings
+        def get_pos_embedinputinput(sents):
+            pos_embedinput_arr = np.zeros(shape=(len(sents), self.config.max_length))
+            for i, sent in enumerate(sents):
+                for j, _ in enumerate(sent):
+                    pos_embedinput_arr[i, j] = j + 1
+            print(pos_embedinput_arr.shape)
+            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
+            return pos_embedinput_tensor
+
+        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s_num)  # [batch_size, max_len]
+        sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s_num)
+
 
         return (
             sent1_bin_tensor, sent1_len_tensor,

@@ -11,7 +11,7 @@ class RNNEncoder(nn.Module):
     def __init__(self, config):
         super(RNNEncoder, self).__init__()
         self.config = config
-        input_size = config.d_proj if config.projection else config.embedding_size
+        input_size = config.embedding_size
         self.rnn = nn.LSTM(
             input_size=input_size, hidden_size=config.hidden_size,
             num_layers=config.n_layers, dropout=config.dp_ratio,

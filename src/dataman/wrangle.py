@@ -146,8 +146,8 @@ class DataManager:
             )
         elif self.config.encoder_type == 'decomposable':
             return (
-                Variable(train_sent1s_num),
-                Variable(train_sent2s_num),
+                Variable(dev_sent1s_num),
+                Variable(dev_sent2s_num),
                 Variable(targets_tensor),
             )
 

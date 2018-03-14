@@ -66,6 +66,9 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
+        if args.cuda:
+            model.net.cuda()
+
         if args.optimizer == 'Adagrad':
             optimizer = optim.Adagrad([param for param in model.net.parameters() if param.requires_grad],
                                             lr=args.lr, weight_decay=args.weight_decay)
@@ -80,8 +83,6 @@ if __name__ == "__main__":
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 
-        if args.cuda:
-            model.net.cuda()
         train_loss, train_acc = model_pipeline_pytorch.train(
             model=model.net,
             optimizer=optimizer,

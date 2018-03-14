@@ -23,12 +23,13 @@ args = dotdict({
     'encoder_type': 'decomposable',
     'lr': 0.05,
     'learning_rate_decay': 0.9,
+    'optimizer': 'Adagrad',
+    'weight_decay': 0.9,
     'max_length': 100,
-    'epochs': 10,
-    'batch_size': 64,
-    'batches_per_epoch': 2000,
+    'epochs': 250,
+    'batch_size': 32,
+    'batches_per_epoch': 3200,
     'test_batches_per_epoch': 500,
-    'input_size': 300,
     'hidden_size': 300,
     'embedding_size': 300,
     'n_layers': 1,
@@ -65,9 +66,17 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
-        optimizer = optim.SGD(
-            [param for param in model.net.parameters() if param.requires_grad],
-            lr=state['lr'])
+        if args.optimizer == 'Adagrad':
+            optimizer = optim.Adagrad([param for param in model.net.parameters() if param.requires_grad],
+                                            lr=args.lr, weight_decay=args.weight_decay)
+        elif args.optimizer == 'Adadelta':
+            optimizer = optim.Adadelta([param for param in model.net.parameters() if param.requires_grad],
+                                       lr=args.lr)
+        else:
+            optimizer = optim.SGD(
+                [param for param in model.net.parameters() if param.requires_grad],
+                lr=state['lr'])
+
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 

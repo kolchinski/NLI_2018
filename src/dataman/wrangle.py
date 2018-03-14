@@ -29,7 +29,7 @@ class DataManager:
             self.train_sent2s_num, self.train_sent2s_len,
             self.train_sent1s_pos_embedinput, self.train_sent2s_pos_embedinput,
             self.train_ys, self.train_size
-        ) = self.load_tok_data(constants.SMALL_TRAIN_TOK_DATA_PATH, train=True)
+        ) = self.load_tok_data(constants.FULL_TRAIN_TOK_DATA_PATH, train=True)
         print('loading dev..')
         (
             self.dev_sent1s_num, self.dev_sent1s_len,

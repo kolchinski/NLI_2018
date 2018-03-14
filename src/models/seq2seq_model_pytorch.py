@@ -93,30 +93,22 @@ class Seq2Seq(nn.Module):
                 n_src_vocab=config.n_embed,
                 n_max_seq=config.max_length,
                 src_word_emb=self.embed,
+                wordemb_dim=config.embedding_size,
+                d_model=config.d_model,
+                permute=False,  # [batch_size, seq_len, d_model]
             )
             self.decoder = transformer_pytorch.Decoder(
-                n_src_vocab=config.n_embed,
+                n_tgt_vocab=config.n_embed,
                 n_max_seq=config.max_length,
                 tgt_word_emb=self.embed,
+                wordemb_dim=config.embedding_size,
+                d_model=config.d_model,
             )
         else:
             raise("encoder_type not supported {}".format(config.encoder_type))
 
-        # self.dropout = nn.Dropout(p=config.dp_ratio)
-        self.relu = nn.ReLU()
         self.tgt_word_proj = nn.Linear(config.d_model, 3, bias=False)
 
-        seq_in_size = 4 * config.hidden_size
-        if self.config.bidirectional:
-            seq_in_size *= 2
-        assert len(config.mlp_classif_hidden_size_list) == 2
-        self.out = nn.Sequential(
-            nn.Linear(seq_in_size, config.mlp_classif_hidden_size_list[0]),
-            self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[0], config.mlp_classif_hidden_size_list[1]),
-            self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[1], config.d_out),
-        )
 
     def forward(
         self,
@@ -140,11 +132,14 @@ class Seq2Seq(nn.Module):
                 src_seq=encoder_input,
                 enc_output=encoder_output,
             )
-            decoder_output_project = self.tgt_word_proj(decoder_output)
+            decoder_output_project = \
+                self.tgt_word_proj(decoder_output)  # [batch_size, max_len, 3]
+            decoder_output_meanpool = \
+                torch.mean(decoder_output_project, 1)  # [batch_size, 3]
         else:
             raise('encoder_type not supported {}'.format(self.config.encoder_type))
 
-        softmax_outputs = F.log_softmax(decoder_output_project, dim=0)  # [batch_size, 3]
+        softmax_outputs = F.log_softmax(decoder_output_meanpool, dim=0)  # [batch_size, 3]
 
         return softmax_outputs
 

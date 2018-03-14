@@ -248,11 +248,13 @@ class Encoder(nn.Module):
     def __init__(  # n_layers=6
             self, n_src_vocab, n_max_seq, src_word_emb, wordemb_dim,
             n_layers=3, n_head=8, d_k=64, d_v=64,
-            d_model=512, d_inner_hid=1024, dropout=0.1):
+            d_model=512, d_inner_hid=1024, dropout=0.1, permute=True):
 
         super(Encoder, self).__init__()
 
         self.src_word_emb = src_word_emb
+
+        self.permute = permute
 
         n_position = n_max_seq + 1
         self.n_max_seq = n_max_seq
@@ -288,7 +290,8 @@ class Encoder(nn.Module):
             if return_attns:
                 enc_slf_attns += [enc_slf_attn]
 
-        enc_output = enc_output.permute(1, 0, 2)  # [seq_len, batch_size, embed_size]
+        if self.permute:
+            enc_output = enc_output.permute(1, 0, 2)  # [seq_len, batch_size, embed_size]
 
         if return_attns:
             return enc_output, enc_slf_attns
@@ -307,6 +310,7 @@ class Decoder(nn.Module):
         self.n_max_seq = n_max_seq
         self.d_model = d_model
 
+        self.tgt_word_emb = tgt_word_emb
         self.wordemb_bottle = BottleLinear(d_in=wordemb_dim, d_out=d_model)
 
         self.position_enc = nn.Embedding(

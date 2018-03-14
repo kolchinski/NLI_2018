@@ -108,24 +108,8 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         optimizer.zero_grad()
         loss.backward()
 
-        # gradient clipping (thanks to https://github.com/facebookresearch/InferSent/blob/master/train_nli.py)
-        shrink_factor = 1
-        total_norm = 0
-
-        for p in model.parameters():
-            if p.requires_grad:
-                p.grad.data.div_(targets.size(0))  # divide by the actual batch size
-                total_norm += p.grad.data.norm() ** 2
-        total_norm = np.sqrt(total_norm)
-
-        if total_norm > args.max_norm:
-            shrink_factor = args.max_norm / total_norm
-        current_lr = optimizer.param_groups[0]['lr'] # current lr (no external "lr", for adam)
-        optimizer.param_groups[0]['lr'] = current_lr * shrink_factor # just for update
-
         # optimizer step
         optimizer.step()
-        optimizer.param_groups[0]['lr'] = current_lr
 
         # measure elapsed time
         batch_time.update(time.time() - end)

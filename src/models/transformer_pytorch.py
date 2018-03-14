@@ -223,13 +223,32 @@ class EncoderLayer(nn.Module):
         return enc_output, enc_slf_attn
 
 
+class DecoderLayer(nn.Module):
+    ''' Compose with three layers '''
+
+    def __init__(self, d_model, d_inner_hid, n_head, d_k, d_v, dropout=0.1):
+        super(DecoderLayer, self).__init__()
+        self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
+        self.enc_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
+        self.pos_ffn = PositionwiseFeedForward(d_model, d_inner_hid, dropout=dropout)
+
+    def forward(self, dec_input, enc_output, slf_attn_mask=None, dec_enc_attn_mask=None):
+        dec_output, dec_slf_attn = self.slf_attn(
+            dec_input, dec_input, dec_input, attn_mask=slf_attn_mask)
+        dec_output, dec_enc_attn = self.enc_attn(
+            dec_output, enc_output, enc_output, attn_mask=dec_enc_attn_mask)
+        dec_output = self.pos_ffn(dec_output)
+
+        return dec_output, dec_slf_attn, dec_enc_attn
+
+
 class Encoder(nn.Module):
     ''' A encoder model with self attention mechanism. '''
 
     def __init__(  # n_layers=6
-            self, n_src_vocab, n_max_seq, src_word_emb,
-            n_layers=2, n_head=8, d_k=64, d_v=64,
-            d_word_vec=300, d_model=300, d_inner_hid=1024, dropout=0.1):
+            self, n_src_vocab, n_max_seq, src_word_emb, wordemb_dim,
+            n_layers=3, n_head=8, d_k=64, d_v=64,
+            d_model=512, d_inner_hid=1024, dropout=0.1):
 
         super(Encoder, self).__init__()
 
@@ -239,10 +258,12 @@ class Encoder(nn.Module):
         self.n_max_seq = n_max_seq
         self.d_model = d_model
 
+        self.wordemb_bottle = BottleLinear(d_in=wordemb_dim, d_out=d_model)
+
         self.position_enc = nn.Embedding(
-            n_position, d_word_vec, padding_idx=PAD_token)
+            n_position, d_model, padding_idx=PAD_token)
         self.position_enc.weight.data = position_encoding_init(
-            n_position, d_word_vec)
+            n_position, d_model)
 
         self.layer_stack = nn.ModuleList([EncoderLayer(
                 d_model, d_inner_hid, n_head, d_k, d_v, dropout=dropout)
@@ -251,6 +272,8 @@ class Encoder(nn.Module):
     def forward(self, src_seq, src_pos, return_attns=False):
         # Word embedding look up
         enc_input = self.src_word_emb(src_seq)
+        # word embedding projection
+        enc_input = self.wordemb_bottle(enc_input)
 
         # Position Encoding addition
         enc_input += self.position_enc(src_pos)
@@ -271,3 +294,63 @@ class Encoder(nn.Module):
             return enc_output, enc_slf_attns
         else:
             return enc_output
+
+class Decoder(nn.Module):
+    ''' A decoder model with self attention mechanism. '''
+    def __init__(
+            self, n_tgt_vocab, n_max_seq, tgt_word_emb, wordemb_dim,
+            n_layers=3, n_head=8, d_k=64, d_v=64,
+            d_model=512, d_inner_hid=1024, dropout=0.1):
+
+        super(Decoder, self).__init__()
+        n_position = n_max_seq + 1
+        self.n_max_seq = n_max_seq
+        self.d_model = d_model
+
+        self.wordemb_bottle = BottleLinear(d_in=wordemb_dim, d_out=d_model)
+
+        self.position_enc = nn.Embedding(
+            n_position, d_model, padding_idx=PAD_token)
+        self.position_enc.weight.data = position_encoding_init(
+            n_position, d_model)
+
+        self.dropout = nn.Dropout(dropout)
+
+        self.layer_stack = nn.ModuleList([
+            DecoderLayer(d_model, d_inner_hid, n_head, d_k, d_v, dropout=dropout)
+            for _ in range(n_layers)])
+
+    def forward(self, tgt_seq, tgt_pos, src_seq, enc_output, return_attns=False):
+        # Word embedding look up
+        dec_input = self.tgt_word_emb(tgt_seq)
+        # word emb projection
+        dec_input = self.wordemb_bottle(dec_input)
+
+        # Position Encoding addition
+        dec_input += self.position_enc(tgt_pos)
+
+        # Decode
+        dec_slf_attn_pad_mask = get_attn_padding_mask(tgt_seq, tgt_seq)
+        dec_slf_attn_sub_mask = get_attn_subsequent_mask(tgt_seq)
+        dec_slf_attn_mask = torch.gt(dec_slf_attn_pad_mask + dec_slf_attn_sub_mask, 0)
+
+        dec_enc_attn_pad_mask = get_attn_padding_mask(tgt_seq, src_seq)
+
+        if return_attns:
+            dec_slf_attns, dec_enc_attns = [], []
+
+        dec_output = dec_input
+        for dec_layer in self.layer_stack:
+            dec_output, dec_slf_attn, dec_enc_attn = dec_layer(
+                dec_output, enc_output,
+                slf_attn_mask=dec_slf_attn_mask,
+                dec_enc_attn_mask=dec_enc_attn_pad_mask)
+
+            if return_attns:
+                dec_slf_attns += [dec_slf_attn]
+                dec_enc_attns += [dec_enc_attn]
+
+        if return_attns:
+            return dec_output, dec_slf_attns, dec_enc_attns
+        else:
+            return dec_output

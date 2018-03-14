@@ -4,7 +4,7 @@ sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
-from models.seq2seq_model_pytorch import Seq2SeqPytorch
+from models.seq2seq_model_pytorch import Seq2Seq
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.siamese_pytorch as siamese_pytorch
 from utils import dotdict
@@ -19,8 +19,10 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
+    'type': 'siamese',
     'encoder_type': 'rnn',
     'lr': 0.05,
+    'use_dot_attention': True,
     'learning_rate_decay': 0.9,
     'max_length': 100,
     'epochs': 10,
@@ -35,7 +37,6 @@ args = dotdict({
     'fix_emb': True,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
-    'max_norm': 5,
     'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
 })
@@ -47,18 +48,19 @@ if __name__ == "__main__":
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
-    if True:
-        model = siamese_pytorch.SNLIClassifier(config=args)
-        model.embed.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        model = dotdict({
-            'net': model,
-            'criterion': nn.NLLLoss(),
-        })  # sorry!
+    if args.type == 'siamese':
+        model = siamese_pytorch.SiameseClassifier(config=args)
+    elif args.type == 's2s':
+        model = Seq2Seq(config=args)
     else:
-        model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-        model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        raise Exception('model type not supported')
+
+    model.embed.weight.data = load_embeddings.load_embeddings(
+        dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    model = dotdict({
+        'net': model,
+        'criterion': nn.NLLLoss(),
+    })  # sorry!
 
     best_dev_acc = 0
     best_train_loss = np.infty
@@ -94,7 +96,7 @@ if __name__ == "__main__":
             best_dev_acc = dev_acc
             print('Saving to checkpoint')
             model_pipeline_pytorch.save_checkpoint(
-                state=state, epoch=epoch, dev_acc=dev_acc)
+                state=state, is_best=True)
         if train_loss > best_train_loss:
             state['lr'] *= args.learning_rate_decay
         else:

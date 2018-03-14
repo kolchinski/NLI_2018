@@ -156,7 +156,7 @@ def test(model, epoch, di, args, loss_criterion):
                 di.sample_dev_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
             encoder_init_hidden = None
-        else:
+        elif args.encoder_type == 'rnn':
             sent1, sent2, unsort1, unsort2, targets = di.m(
                 encoder_embed=model.embed,
                 decoder_embed=model.embed,
@@ -165,6 +165,11 @@ def test(model, epoch, di, args, loss_criterion):
             sent1_posembinput, sent2_posembinput = None, None
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=args.batch_size)
+        elif args.encoder_type == 'decomposable':
+            sent1, sent2, targets = \
+                di.sample_dev_batch(use_cuda=args.cuda)
+            unsort1, unsort2 = None, None
+            encoder_init_hidden = None
         if args.cuda:
             model = model.cuda()
             targets = targets.cuda(async=True)
@@ -173,6 +178,9 @@ def test(model, epoch, di, args, loss_criterion):
                 sent2 = sent2.cuda()
                 sent1_posembinput = sent1_posembinput.cuda()
                 sent2_posembinput = sent2_posembinput.cuda()
+            elif args.encoder_type == 'decomposable':
+                sent1 = sent1.cuda()
+                sent2 = sent2.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
@@ -183,15 +191,21 @@ def test(model, epoch, di, args, loss_criterion):
         data_time.update(time.time() - end)
 
         # compute output
-        softmax_outputs = model(
-            encoder_init_hidden=encoder_init_hidden,
-            encoder_input=sent1,
-            encoder_pos_emb_input=sent1_posembinput,
-            encoder_unsort=unsort1,
-            decoder_input=sent2,
-            decoder_pos_emb_input=sent2_posembinput,
-            decoder_unsort=unsort2,
-            batch_size=args.batch_size,
+        if args.encoder_type == 'decomposable':
+            softmax_outputs = model(
+                sent1=sent1,
+                sent2=sent2,
+            )
+        else:
+            softmax_outputs = model(
+                encoder_init_hidden=encoder_init_hidden,
+                encoder_input=sent1,
+                encoder_pos_emb_input=sent1_posembinput,
+                encoder_unsort=unsort1,
+                decoder_input=sent2,
+                decoder_pos_emb_input=sent2_posembinput,
+                decoder_unsort=unsort2,
+                batch_size=args.batch_size,
         )
         loss = loss_criterion(softmax_outputs, targets)
 

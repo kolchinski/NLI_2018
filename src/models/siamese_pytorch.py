@@ -37,10 +37,10 @@ class TransformerEncoder(nn.Module):
         self.config = config
 
 
-class SNLIClassifier(nn.Module):
+class SiameseClassifier(nn.Module):
 
     def __init__(self, config):
-        super(SNLIClassifier, self).__init__()
+        super(SiameseClassifier, self).__init__()
         self.config = config
         self.embed = nn.Embedding(config.n_embed, config.embedding_size)
         if self.config.fix_emb:
@@ -51,6 +51,7 @@ class SNLIClassifier(nn.Module):
                 n_src_vocab=config.n_embed,
                 n_max_seq=config.max_length,
                 src_word_emb=self.embed,
+                wordemb_dim=self.config.embedding_size,
             )
         else:
             self.encoder = RNNEncoder(config)
@@ -65,11 +66,7 @@ class SNLIClassifier(nn.Module):
             nn.Linear(seq_in_size, config.mlp_classif_hidden_size_list[0]),
             self.dropout,
             self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[0], config.mlp_classif_hidden_size_list[1]),
-            self.dropout,
-            self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[1], config.d_out),
-            self.dropout,
+            nn.Linear(config.mlp_classif_hidden_size_list[0], config.d_out),
         )
 
     def forward(
@@ -87,7 +84,7 @@ class SNLIClassifier(nn.Module):
         hypo_embed = decoder_input
 
         if self.config.encoder_type == 'transformer':
-            premise = self.encoder(
+            premise = self.encoder(  # [max_len, batch_size, d_model]
                 src_seq=encoder_input,
                 src_pos=encoder_pos_emb_input,
             )

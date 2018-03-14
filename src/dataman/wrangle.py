@@ -223,7 +223,8 @@ class DataManager:
             pos_embedinput_arr = np.zeros(shape=(len(sents), self.config.max_length))
             for i, sent in enumerate(sents):
                 for j, _ in enumerate(sent):
-                    pos_embedinput_arr[i, j] = j + 1
+                    if j < self.config.max_length:
+                        pos_embedinput_arr[i, j] = j + 1
             print(pos_embedinput_arr.shape)
             pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
             return pos_embedinput_tensor

@@ -20,23 +20,22 @@ logger = logging.getLogger(__name__)
 
 args = dotdict({
     'encoder_type': 'transformer',
-    'lr': 0.05,
+    'lr': 0.01,
     'learning_rate_decay': 0.9,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
-    'batch_size': 64,
-    'batches_per_epoch': 2000,
+    'batch_size': 128,
+    'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 300,
+    'hidden_size': 512,
     'embedding_size': 300,
     'n_layers': 1,
     'bidirectional': False,
     'fix_emb': True,
     'd_proj': None,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.7,
     'd_out': 3,  # 3 classes
-    'max_norm': 5,
     'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
 })
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
     if True:
-        model = siamese_pytorch.SNLIClassifier(config=args)
+        model = siamese_pytorch.SiameseClassifier(config=args)
         model.embed.weight.data = load_embeddings.load_embeddings(
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
         model = dotdict({
@@ -67,6 +66,7 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
+        print('lr {}'.format(state['lr']))
         optimizer = optim.SGD(
             [param for param in model.net.parameters() if param.requires_grad],
             lr=state['lr'])

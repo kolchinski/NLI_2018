@@ -74,7 +74,8 @@ class SNLIClassifier(nn.Module):
             # print(m)
             if isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, self.para_init)
-                #m.bias.data.normal_(0, self.para_init)
+                if m.bias is not None:
+                    m.bias.data.normal_(0, self.para_init)
 
     def _mlp_layers(self, input_dim, output_dim):
         mlp_layers = []
@@ -111,13 +112,13 @@ class SNLIClassifier(nn.Module):
 
         score1 = torch.bmm(f1, torch.transpose(f2, 1, 2))
         # e_{ij} batch_size x len1 x len2
-        prob1 = F.softmax(score1.view(-1, len2)).view(-1, len1, len2)
+        prob1 = F.softmax(score1.view(-1, len2),dim=1).view(-1, len1, len2)
         # batch_size x len1 x len2
 
         score2 = torch.transpose(score1.contiguous(), 1, 2)
         score2 = score2.contiguous()
         # e_{ji} batch_size x len2 x len1
-        prob2 = F.softmax(score2.view(-1, len1)).view(-1, len2, len1)
+        prob2 = F.softmax(score2.view(-1, len1),dim=1).view(-1, len2, len1)
         # batch_size x len2 x len1
 
         sent1_combine = torch.cat(
@@ -154,6 +155,7 @@ class SNLIClassifier(nn.Module):
         # print 'final layer'
         # print h.data
 
-        log_prob = self.log_prob(h)
+        #log_prob = self.log_prob(h)
+        log_prob = F.log_softmax(h, dim=1)
 
         return log_prob

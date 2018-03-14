@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 args = dotdict({
     'encoder_type': 'decomposable',
     'lr': 0.05,
-    'learning_rate_decay': 0.9,
+    'learning_rate_decay': 1,
     'optimizer': 'Adagrad',
     'weight_decay': 0.9,
     'max_length': 100,

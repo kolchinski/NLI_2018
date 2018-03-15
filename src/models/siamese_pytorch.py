@@ -53,8 +53,11 @@ class SiameseClassifier(nn.Module):
                 src_word_emb=self.embed,
                 wordemb_dim=self.config.embedding_size,
             )
-        else:
+        elif config.encoder_type == 'rnn':
             self.encoder = RNNEncoder(config)
+        else:
+            raise Exception("encoder_type not here {}".format(config.encoder_type))
+
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
 

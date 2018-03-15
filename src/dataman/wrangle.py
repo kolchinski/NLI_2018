@@ -89,12 +89,6 @@ class DataManager:
                 Variable(train_sent2s_pos_embedinput),
                 Variable(targets_tensor),
             )
-        elif self.config.encoder_type == 'decomposable':
-            return (
-                Variable(train_sent1s_num),
-                Variable(train_sent2s_num),
-                Variable(targets_tensor),
-            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
@@ -144,12 +138,6 @@ class DataManager:
                 Variable(dev_sent2s_pos_embedinput, volatile=True),
                 Variable(targets_tensor),
             )
-        elif self.config.encoder_type == 'decomposable':
-            return (
-                Variable(dev_sent1s_num),
-                Variable(dev_sent2s_num),
-                Variable(targets_tensor),
-            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent1s_num,
@@ -172,6 +160,54 @@ class DataManager:
             Variable(targets_tensor),  # [batch_size,]
         )
 
+    def get_next_test_batch(
+        self,
+        use_cuda,
+        encoder_embed=None,
+        decoder_embed=None,
+    ):
+        sample_idx = self.curr_batch_test * self.batch_size
+        test_sent1s_num = self.test_sent1s_num[sample_idx: sample_idx + self.batch_size]
+        test_sent1s_len = self.test_sent1s_len[sample_idx: sample_idx + self.batch_size]
+        test_sent1s_pos_embedinput = self.test_sent1s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
+        test_sent2s_num = self.test_sent2s_num[sample_idx: sample_idx + self.batch_size]
+        test_sent2s_len = self.test_sent2s_len[sample_idx: sample_idx + self.batch_size]
+        test_sent2s_pos_embedinput = self.test_sent1s_pos_embedinput[
+            sample_idx: sample_idx + self.batch_size]
+        targets_tensor = self.test_ys[sample_idx: sample_idx + self.batch_size]
+
+        self.curr_batch_test = (self.curr_batch_test + 1) % self.num_batch_test
+
+        if self.config.encoder_type == 'transformer':
+            return (  # do not train positional embeddings (volatile=True)
+                Variable(test_sent1s_num),
+                Variable(test_sent1s_pos_embedinput, volatile=True),
+                Variable(test_sent2s_num),
+                Variable(test_sent2s_pos_embedinput, volatile=True),
+                Variable(targets_tensor),
+            )
+
+        seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
+            seq_tensor=test_sent1s_num,
+            seq_lengths=test_sent1s_len,
+            embed=encoder_embed,
+            use_cuda=use_cuda,
+        )
+        seq2_packed_tensor, seq2_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
+            seq_tensor=test_sent2s_num,
+            seq_lengths=test_sent2s_len,
+            embed=decoder_embed,
+            use_cuda=use_cuda,
+        )
+
+        return (
+            seq1_packed_tensor,  # [batch_size, seq_len]
+            seq2_packed_tensor,  # [batch_size, seq_len]
+            seq1_idx_unsort,
+            seq2_idx_unsort,
+            Variable(targets_tensor),  # [batch_size,]
+        )
 
     def load_tok_data(self, path, train=False):
         sent1s, sent2s, targets = [], [], []

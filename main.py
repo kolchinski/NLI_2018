@@ -57,46 +57,50 @@ if __name__ == "__main__":
 
     model.embed.weight.data = load_embeddings.load_embeddings(
         dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-    model = dotdict({
-        'net': model,
-        'criterion': nn.NLLLoss(),
-    })  # sorry!
 
     best_dev_acc = 0
     best_train_loss = np.infty
+
+    criterion = nn.NLLLoss()
 
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
         optimizer = optim.SGD(
-            [param for param in model.net.parameters() if param.requires_grad],
+            [param for param in model.parameters() if param.requires_grad],
             lr=state['lr'])
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 
         if args.cuda:
-            model.net.cuda()
+            model.cuda()
         train_loss, train_acc = model_pipeline_pytorch.train(
-            model=model.net,
+            model=model,
             optimizer=optimizer,
             epoch=epoch,
             di=dm,
             args=args,
-            loss_criterion=model.criterion,
+            loss_criterion=criterion,
         )
         dev_loss, dev_acc = model_pipeline_pytorch.test(
-            model=model.net,
+            model=model,
             epoch=epoch,
             di=dm,
             args=args,
-            loss_criterion=model.criterion,
+            loss_criterion=criterion,
         )
         if dev_acc > best_dev_acc:
             print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
             best_dev_acc = dev_acc
-            print('Saving to checkpoint')
-            model_pipeline_pytorch.save_checkpoint(
-                state=state, is_best=True)
+        print('Saving to checkpoint')
+        model_pipeline_pytorch.save_checkpoint(
+            state={
+                'epoch': epoch + 1,
+                'state_dict': model.state_dict(),
+                'acc': dev_acc,
+                'best_acc': best_dev_acc,
+                'optimizer': optimizer.state_dict()
+            }, is_best=True)
         if train_loss > best_train_loss:
             state['lr'] *= args.learning_rate_decay
         else:

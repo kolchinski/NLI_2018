@@ -106,9 +106,21 @@ if __name__ == "__main__":
         if dev_acc > best_dev_acc:
             print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
             best_dev_acc = dev_acc
-            print('Saving to checkpoint')
-            model_pipeline_pytorch.save_checkpoint(
-                state=state, is_best=True)
+
+        print('Saving to checkpoint')
+        model_pipeline_pytorch.save_checkpoint(
+            state={
+                'epoch': epoch + 1,
+                'state_dict': model.state_dict(),
+                'acc': dev_acc,
+                'best_acc': best_dev_acc,
+                'optimizer': optimizer.state_dict()
+            }, is_best=dev_acc > best_dev_acc)
+
+        if train_loss > best_train_loss:
+            state['lr'] *= args.learning_rate_decay
+        else:
+            best_train_loss = train_loss
         if train_loss > best_train_loss:
             state['lr'] *= args.learning_rate_decay
         else:

@@ -21,27 +21,25 @@ logger = logging.getLogger(__name__)
 
 args = dotdict({
     'encoder_type': 'decomposable',
-    'lr': 0.05,
+    'lr': 0.025,
     'learning_rate_decay': 1,
+    'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
-    'weight_decay': 0.9,
+    'Adagrad_init': 0.,
+    'weight_decay': 5e-5,
     'max_length': 100,
     'epochs': 250,
     'batch_size': 32,
-    'batches_per_epoch': 3200,
+    'batches_per_epoch': 18000,
     'test_batches_per_epoch': 500,
-    'hidden_size': 300,
+    'hidden_size': 200,
     'embedding_size': 300,
-    'n_layers': 1,
-    'bidirectional': False,
     'fix_emb': True,
-    'd_proj': None,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.2,
     'd_out': 3,  # 3 classes
     'max_norm': 5,
-    'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
-    'para_init': 0.01, # parameter init Gaussian variance
+    'display_interval': 10,
 })
 state = {k: v for k, v in args.items()}
 
@@ -63,24 +61,31 @@ if __name__ == "__main__":
     best_dev_acc = 0
     best_train_loss = np.infty
 
+    if args.cuda:
+        model.net.cuda()
+
+    if args.optimizer == 'Adagrad':
+        optimizer = optim.Adagrad([param for param in model.net.parameters() if param.requires_grad],
+                                  lr=args.lr, weight_decay=args.weight_decay)
+        for group in optimizer.param_groups:
+            for p in group['params']:
+                optstate = optimizer.state[p]
+                optstate['sum'] += args.Adagrad_init
+    elif args.optimizer == 'Adadelta':
+        optimizer = optim.Adadelta([param for param in model.net.parameters() if param.requires_grad],
+                                   lr=args.lr)
+    else:
+        optimizer = optim.SGD(
+            [param for param in model.net.parameters() if param.requires_grad],
+            lr=state['lr'])
+
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
-        if args.cuda:
-            model.net.cuda()
-
-        if args.optimizer == 'Adagrad':
-            optimizer = optim.Adagrad([param for param in model.net.parameters() if param.requires_grad],
-                                            lr=args.lr, weight_decay=args.weight_decay)
-        elif args.optimizer == 'Adadelta':
-            optimizer = optim.Adadelta([param for param in model.net.parameters() if param.requires_grad],
-                                       lr=args.lr)
-        else:
-            optimizer = optim.SGD(
-                [param for param in model.net.parameters() if param.requires_grad],
-                lr=state['lr'])
-
         logger.info('\nEpoch: [{} | {}] LR: {}'.format(
+            epoch + 1, args.epochs, state['lr']))
+        if epoch % args.display_interval == 0:
+            print('\nEpoch: [{} | {}] LR: {}'.format(
             epoch + 1, args.epochs, state['lr']))
 
         train_loss, train_acc = model_pipeline_pytorch.train(

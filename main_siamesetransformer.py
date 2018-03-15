@@ -23,7 +23,7 @@ args = dotdict({
     'lr': 0.01,
     'learning_rate_decay': 0.9,
     'max_length': 50,
-    'epochs': 10,
+    'epochs': 20,
     'batch_size': 128,
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
@@ -59,6 +59,11 @@ if __name__ == "__main__":
         model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
         model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+
+    # number of parameters
+    print("number of trainable parameters found {}".format(sum(
+        param.nelement() for param in model.net.parameters()
+        if param.requires_grad)))
 
     best_dev_acc = 0
     best_train_loss = np.infty

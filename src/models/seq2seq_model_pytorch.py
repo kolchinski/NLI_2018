@@ -144,7 +144,6 @@ class Seq2Seq(nn.Module):
         return softmax_outputs
 
 
-
 class EncoderRNN(nn.Module):
     def __init__(self, hidden_size, vocab_size, embedding_size):
         super(EncoderRNN, self).__init__()

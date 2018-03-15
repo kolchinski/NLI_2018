@@ -247,7 +247,7 @@ class Encoder(nn.Module):
 
     def __init__(  # n_layers=6
             self, n_src_vocab, n_max_seq, src_word_emb, wordemb_dim,
-            n_layers=3, n_head=8, d_k=64, d_v=64,
+            n_layers=4, n_head=8, d_k=64, d_v=64,
             d_model=512, d_inner_hid=1024, dropout=0.1, permute=True):
 
         super(Encoder, self).__init__()
@@ -302,7 +302,7 @@ class Decoder(nn.Module):
     ''' A decoder model with self attention mechanism. '''
     def __init__(
             self, n_tgt_vocab, n_max_seq, tgt_word_emb, wordemb_dim,
-            n_layers=3, n_head=8, d_k=64, d_v=64,
+            n_layers=6, n_head=8, d_k=64, d_v=64,
             d_model=512, d_inner_hid=1024, dropout=0.1):
 
         super(Decoder, self).__init__()

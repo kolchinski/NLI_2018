@@ -59,7 +59,7 @@ if __name__ == "__main__":
         dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
     best_dev_acc = 0
-    best_train_loss = np.infty
+    best_train_acc = -np.infty
 
     criterion = nn.NLLLoss()
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 'best_acc': best_dev_acc,
                 'optimizer': optimizer.state_dict()
             }, is_best=True)
-        if train_loss > best_train_loss:
+        if train_acc - best_train_acc < 0.03:
             state['lr'] *= args.learning_rate_decay
-        else:
-            best_train_loss = train_loss
+        if train_acc > best_train_acc:
+            best_train_acc = train_acc

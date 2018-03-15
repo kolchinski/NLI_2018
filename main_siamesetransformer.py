@@ -51,7 +51,7 @@ if __name__ == "__main__":
         model = siamese_pytorch.SiameseClassifier(config=args)
         model.embed.weight.data = load_embeddings.load_embeddings(
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        criterion = nn.NLLLoss(),
+        criterion = nn.NLLLoss()
     else:
         model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
         model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         if param.requires_grad)))
 
     best_dev_acc = 0
-    best_train_loss = np.infty
+    best_train_acc = -np.infty
 
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 },
                 is_best=dev_acc > best_dev_acc,
             )
-        if train_loss > best_train_loss:
+        if train_acc - best_train_acc < 0.03:
             state['lr'] *= args.learning_rate_decay
-        else:
-            best_train_loss = train_loss
+        if train_acc > best_train_acc:
+            best_train_acc = train_acc

@@ -23,7 +23,7 @@ args = dotdict({
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
-    'learning_rate_decay': 0.2,
+    'learning_rate_decay': 0.8,
     'max_length': 100,
     'epochs': 10,
     'batch_size': 64,

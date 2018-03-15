@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 args = dotdict({
     'encoder_type': 'transformer',
     'lr': 0.01,
-    'learning_rate_decay': 0.2,
+    'learning_rate_decay': 0.8,
     'max_length': 50,
     'epochs': 20,
     'batch_size': 128,

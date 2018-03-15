@@ -16,8 +16,6 @@ import logging
 import models.load_embeddings as load_embeddings
 import constants
 
-logger = logging.getLogger(__name__)
-
 args = dotdict({
     'encoder_type': 'transformer',
     'lr': 0.01,
@@ -59,49 +57,3 @@ if __name__ == "__main__":
         model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
         model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-
-    # number of parameters
-    print("number of trainable parameters found {}".format(sum(
-        param.nelement() for param in model.net.parameters()
-        if param.requires_grad)))
-
-    best_dev_acc = 0
-    best_train_loss = np.infty
-
-    for epoch in range(args.epochs):
-        dm.shuffle_train_data()
-
-        print('lr {}'.format(state['lr']))
-        optimizer = optim.SGD(
-            [param for param in model.net.parameters() if param.requires_grad],
-            lr=state['lr'])
-        logger.info('\nEpoch: [{} | {}] LR: {}'.format(
-            epoch + 1, args.epochs, state['lr']))
-
-        if args.cuda:
-            model.net.cuda()
-        train_loss, train_acc = model_pipeline_pytorch.train(
-            model=model.net,
-            optimizer=optimizer,
-            epoch=epoch,
-            di=dm,
-            args=args,
-            loss_criterion=model.criterion,
-        )
-        dev_loss, dev_acc = model_pipeline_pytorch.test(
-            model=model.net,
-            epoch=epoch,
-            di=dm,
-            args=args,
-            loss_criterion=model.criterion,
-        )
-        if dev_acc > best_dev_acc:
-            print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))
-            best_dev_acc = dev_acc
-            print('Saving to checkpoint')
-            model_pipeline_pytorch.save_checkpoint(
-                state=state, is_best=True)
-        if train_loss > best_train_loss:
-            state['lr'] *= args.learning_rate_decay
-        else:
-            best_train_loss = train_loss

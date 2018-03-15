@@ -4,7 +4,7 @@ sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
-from models.seq2seq_model_pytorch import Seq2SeqPytorch
+from models.seq2seq_model_pytorch import Seq2Seq
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.siamese_pytorch as siamese_pytorch
 from utils import dotdict
@@ -19,25 +19,27 @@ import constants
 logger = logging.getLogger(__name__)
 
 args = dotdict({
+    'type': 's2s',
     'encoder_type': 'transformer',
-    'lr': 0.01,
+    'lr': 0.05,
+    'use_dot_attention': True,
     'learning_rate_decay': 0.9,
-    'max_length': 50,
-    'epochs': 20,
-    'batch_size': 128,
-    'batches_per_epoch': 5000,
+    'max_length': 100,
+    'epochs': 10,
+    'batch_size': 64,
+    'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 512,
-    'embedding_size': 300,
+    'hidden_size': 2048,
     'n_layers': 1,
     'bidirectional': False,
+    'embedding_size': 300,
+    'd_model': 512,
     'fix_emb': True,
-    'd_proj': None,
-    'dp_ratio': 0.7,
+    'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
-    'cuda': torch.cuda.is_available(),
+    'cuda': False # torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
 
@@ -47,23 +49,19 @@ if __name__ == "__main__":
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
-    if True:
+    if args.type == 'siamese':
         model = siamese_pytorch.SiameseClassifier(config=args)
-        model.embed.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        model = dotdict({
-            'net': model,
-            'criterion': nn.NLLLoss(),
-        })  # sorry!
+    elif args.type == 's2s':
+        model = Seq2Seq(config=args)
     else:
-        model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-        model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        raise Exception('model type not supported')
 
-    # number of parameters
-    print("number of trainable parameters found {}".format(sum(
-        param.nelement() for param in model.net.parameters()
-        if param.requires_grad)))
+    model.embed.weight.data = load_embeddings.load_embeddings(
+        dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    model = dotdict({
+        'net': model,
+        'criterion': nn.NLLLoss(),
+    })  # sorry!
 
     best_dev_acc = 0
     best_train_loss = np.infty
@@ -71,7 +69,6 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
-        print('lr {}'.format(state['lr']))
         optimizer = optim.SGD(
             [param for param in model.net.parameters() if param.requires_grad],
             lr=state['lr'])

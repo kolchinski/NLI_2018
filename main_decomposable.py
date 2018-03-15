@@ -117,7 +117,7 @@ if __name__ == "__main__":
                 'optimizer': optimizer.state_dict()
             }, is_best=dev_acc > best_dev_acc)
 
-        if train_acc - best_train_acc < 0.03:
+        if train_acc - best_train_acc < 3:
             state['lr'] *= args.learning_rate_decay
         if train_acc > best_train_acc:
             best_train_acc = train_acc

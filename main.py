@@ -23,7 +23,7 @@ args = dotdict({
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
-    'learning_rate_decay': 0.9,
+    'learning_rate_decay': 0.2,
     'max_length': 100,
     'epochs': 10,
     'batch_size': 64,
@@ -66,6 +66,7 @@ if __name__ == "__main__":
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
 
+        print('lr {}'.format(state['lr']))
         optimizer = optim.SGD(
             [param for param in model.parameters() if param.requires_grad],
             lr=state['lr'])
@@ -101,7 +102,7 @@ if __name__ == "__main__":
                 'best_acc': best_dev_acc,
                 'optimizer': optimizer.state_dict()
             }, is_best=True)
-        if train_acc - best_train_acc < 0.03:
+        if train_acc - best_train_acc < 3:
             state['lr'] *= args.learning_rate_decay
         if train_acc > best_train_acc:
             best_train_acc = train_acc

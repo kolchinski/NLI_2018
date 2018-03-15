@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 args = dotdict({
     'encoder_type': 'transformer',
     'lr': 0.01,
-    'learning_rate_decay': 0.9,
+    'learning_rate_decay': 0.2,
     'max_length': 50,
     'epochs': 20,
     'batch_size': 128,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                 },
                 is_best=dev_acc > best_dev_acc,
             )
-        if train_acc - best_train_acc < 0.03:
+        if train_acc - best_train_acc < 3:
             state['lr'] *= args.learning_rate_decay
         if train_acc > best_train_acc:
             best_train_acc = train_acc

@@ -16,11 +16,6 @@ PAD_token = 0
 EOS_token = 1
 UNK_token = 2
 
-#import models.load_embeddings as load_embeddings
-#import constants
-#model.net.encoder.embedding.weight.data = load_embeddings.load_embeddings(dm.vocab, constants.EMBED_DATA_PATH,
-#                                                                              args.embedding_size)
-
 def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
     name = 'glove.6B.' + str(d_embed) + 'd.txt'
     name_pt = name + '.pt'
@@ -28,7 +23,7 @@ def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
 
     # Build pretrained embedding vectors
     if os.path.isfile(path_pt):  # Load .pt file if there is any cached
-        logger.info('Loading vectors from {}'.format(path_pt))
+        print('Loading vectors from {}'.format(path_pt))
         itos, stoi, vectors, dim = torch.load(path_pt)
     else:  # Read from Glove .txt file
         path = os.path.join(path,name)
@@ -39,7 +34,7 @@ def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
                 lines = [line for line in f]
         except:
             raise RuntimeError('Could not read {} as format UTF8'.format(path))
-        logger.info("Loading vectors from {}".format(path))
+        print("Loading vectors from {}".format(path))
 
         itos, vectors, dim = [], array.array(str('d')), None
 
@@ -62,16 +57,16 @@ def load_embeddings(vocab, path, d_embed, unk_init=torch.Tensor.zero_):
         stoi = {word: i for i, word in enumerate(itos)}
         vectors = torch.Tensor(vectors).view(-1, dim)
         print(vectors.shape)
-        logger.info('Saving vectors to {}'.format(path_pt))
+        print('Saving vectors to {}'.format(path_pt))
         torch.save((itos, stoi, vectors, dim), path_pt)
-    # Look up vectors for words in vocabularin the pretrained vectors
+    # Look up vectors for words in vocab in the pretrained vectors
     vocab_vectors = torch.Tensor(vocab.n_words, dim).zero_()
     #print(vocab.index2word)
-    for i, (_, token) in enumerate(vocab.index2word.items()):
-        #print(i,token,type(token),vocab.index2word[i],type(vocab.index2word[i]))
-        if i < 2:  # Skip the first 3 words PAD EOS UNK
+    for _, (i, token) in enumerate(vocab.index2word.items()):
+        if i < 3:  # Skip the first 3 words PAD EOS UNK
             continue
-        token = token.strip(',.')
+        #token = token.strip(''',.:;"()'/?<>[]{}\|!@#$%^&*''')
+        #print(i,token,(token in stoi))
         if token in stoi:
             vocab_vectors[i][:] = vectors[stoi[token]]
         else:

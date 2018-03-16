@@ -28,7 +28,7 @@ args = dotdict({
     'Adagrad_init': 0.,
     'weight_decay': 5e-5,
     'max_length': 100,
-    'epochs': 250,
+    'epochs': 100,
     'batch_size': 32,
     'batches_per_epoch': 18000,
     'test_batches_per_epoch': 500,

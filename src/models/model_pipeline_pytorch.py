@@ -52,7 +52,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
                 batch_size=args.batch_size)
         elif args.encoder_type == 'decomposable':
             sent1, sent2, targets = \
-            di.sample_train_batch(use_cuda=args.cuda)
+                di.sample_train_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
             encoder_init_hidden = None
 
@@ -116,9 +116,9 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
             if isinstance(m, nn.Linear):
                 grad_norm += m.weight.grad.data.norm() ** 2
                 para_norm += m.weight.data.norm() ** 2
-        if m.bias is not None:
-            grad_norm += m.bias.grad.data.norm() ** 2
-            para_norm += m.bias.data.norm() ** 2
+                if m.bias is not None:
+                    grad_norm += m.bias.grad.data.norm() ** 2
+                    para_norm += m.bias.data.norm() ** 2
 
         grad_norm ** 0.5
         para_norm ** 0.5
@@ -187,7 +187,7 @@ def test(model, epoch, di, args, loss_criterion):
                 batch_size=args.batch_size)
         elif args.encoder_type == 'decomposable':
             sent1, sent2, targets = \
-            di.sample_train_batch(use_cuda=args.cuda)
+                di.sample_train_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
             encoder_init_hidden = None
 
@@ -200,10 +200,8 @@ def test(model, epoch, di, args, loss_criterion):
                 sent1_posembinput = sent1_posembinput.cuda()
                 sent2_posembinput = sent2_posembinput.cuda()
             elif args.encoder_type == 'decomposable':
-                sent1, sent2, targets = \
-                    di.sample_train_batch(use_cuda=args.cuda)
-                unsort1, unsort2 = None, None
-                encoder_init_hidden = None
+                sent1 = sent1.cuda()
+                sent2 = sent2.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]

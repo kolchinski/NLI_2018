@@ -94,7 +94,7 @@ class DataManager:
                 Variable(train_sent1s_num),
                 Variable(train_sent2s_num),
                 Variable(targets_tensor),
-        )
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
@@ -149,7 +149,7 @@ class DataManager:
                 Variable(dev_sent1s_num),
                 Variable(dev_sent2s_num),
                 Variable(targets_tensor),
-        )
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=dev_sent1s_num,

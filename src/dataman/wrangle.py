@@ -1,12 +1,14 @@
-import constants
+import sys
+sys.path.append('../')
+import src.constants as constants
+import src.models.vocab_pytorch as vocab_pytorch
+
 import json
 import logging
 import numpy as np
-import sys
-sys.path.append('../')
+
 import torch
 from torch.autograd import Variable
-import models.vocab_pytorch as vocab_pytorch
 
 logger = logging.getLogger(__name__)
 

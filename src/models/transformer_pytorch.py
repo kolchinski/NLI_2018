@@ -6,7 +6,7 @@ import torch.nn as nn
 import numpy as np
 import torch.nn.init as init
 
-from vocab_pytorch import PAD_token
+from src.models.vocab_pytorch import PAD_token
 
 __author__ = "Yu-Hsiang Huang"
 

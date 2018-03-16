@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-import transformer_pytorch
+import src.models.transformer_pytorch as transformer_pytorch
 
 
 class RNNEncoder(nn.Module):

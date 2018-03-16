@@ -1,15 +1,18 @@
 import sys
-sys.path.append('./src')
-sys.path.append('./src/models')
+# sys.path.append('./src')
+# sys.path.append('./src/models')
 
 import SentEval.senteval as senteval
 import torch.nn as nn
 import numpy as np
-import dataman.wrangle as wrangle
-from models.seq2seq_model_pytorch import Seq2SeqPytorch
-import models.model_pipeline_pytorch as model_pipeline_pytorch
-import models.siamese_pytorch as siamese_pytorch
-from utils import dotdict
+import src.dataman.wrangle as wrangle
+import src.models.load_embeddings as load_embeddings
+from src.models.seq2seq_model_pytorch import Seq2SeqPytorch
+import src.models.model_pipeline_pytorch as model_pipeline_pytorch
+import src.models.siamese_pytorch as siamese_pytorch
+from src.utils import dotdict
+import src.constants as constants
+
 import torch
 import torch.optim as optim
 import sys
@@ -19,8 +22,6 @@ from pytorch_classification.utils import (
     Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig)
 
 
-import models.load_embeddings as load_embeddings
-import constants
 
 args = dotdict({
     'type': 'siamese',

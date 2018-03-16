@@ -15,7 +15,8 @@ import torch.optim as optim
 import sys
 import logging
 import time
-from pytorch_classification.utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig
+from pytorch_classification.utils import (
+    Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig)
 
 
 import models.load_embeddings as load_embeddings
@@ -45,24 +46,89 @@ args = dotdict({
 })
 state = {k: v for k, v in args.items()}
 
+# define senteval params
+params_senteval = {
+    'task_path': '../SentEval/data',
+    'usepytorch': True,
+    'kfold': 10
+}
+params_senteval['classifier'] = {
+    'nhid': 0,
+    'optim': 'adam',
+    'batch_size': 64,
+    'tenacity': 5,
+    'epoch_size': 4
+}
+
+# Set up logger
+logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.DEBUG)
+
 if __name__ == "__main__":
-    print(args)
-    checkpoint = sys.argv[1]
-    print('found checkpoint dir {}'.format(checkpoint))
 
-    dm = wrangle.DataManager(args)
-    args.n_embed = dm.vocab.n_words
-    if True:
-        model = siamese_pytorch.SiameseClassifier(config=args)
-        model.embed.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-    else:
-        model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-        model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    def prepare(params, samples):
+        print(args)
+        checkpoint = sys.argv[1]
+        print('found checkpoint dir {}'.format(checkpoint))
 
-    model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
+        dm = wrangle.DataManager(args)
+        args.n_embed = dm.vocab.n_words
+        if True:
+            model = siamese_pytorch.SiameseClassifier(config=args)
+            model.embed.weight.data = load_embeddings.load_embeddings(
+                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        else:
+            model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+            model.encoder.embedding.weight.data = load_embeddings.\
+                load_embeddings(
+                    dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
-    model.eval()
-    if args.cuda:
-        model = model.cuda()
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
+
+        sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
+            config=args, embed=model.embed, encoder=model.encoder)
+
+        model.eval()
+        if args.cuda:
+            model = model.cuda()
+
+        params['config'] = args
+        params['dm'] = dm
+        params['sent_model'] = sent_model
+
+    def batcher(params, batch):
+        ''' input batch is list of sentences (list of words/tokenized)'''
+        config = params['config']
+        dm = params['dm']
+        model = params['sent_model']
+
+        # numberize
+        sents_num, sent_bin_tensor, sent_len_tensor = dm.\
+            numberize_sents_to_tensor(batch)
+
+        # prepare input data
+        if config.encoder_type == 'transformer':
+            sent, sent_posembinput = None  # TODO
+            sent_unsort = None
+            encoder_init_hidden = None
+        elif config.encoder_type == 'rnn':
+            sent, sent_unsort = None  # TODO
+            sent_posembinput = None
+            encoder_init_hidden = model.encoder.initHidden(
+                batch_size=args.batch_size)
+
+        embeddings = model(
+            encoder_init_hidden=encoder_init_hidden,
+            encoder_input=sent,
+            encoder_pos_emb_input=sent_posembinput,
+            encoder_unsort=sent_unsort,
+            batch_size=config.batch_size
+        )
+
+        return embeddings
+
+    se = senteval.engine.SE(params_senteval, batcher, prepare)
+    transfer_tasks = ['STS12', 'STS13', 'STS14', 'STS15', 'STS16',
+                      'MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC', 'MRPC',
+                      'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
+    results = se.eval(transfer_tasks)
+    print(results)

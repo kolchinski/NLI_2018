@@ -28,7 +28,7 @@ args = dotdict({
     'Adagrad_init': 0.,
     'weight_decay': 5e-5,
     'max_length': 100,
-    'epochs': 100,
+    'epochs': 50,
     'batch_size': 32,
     'batches_per_epoch': 18000,
     'test_batches_per_epoch': 500,
@@ -53,30 +53,32 @@ if __name__ == "__main__":
     model = decomposable_pytorch.SNLIClassifier(config=args)
     model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
         dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-    model = dotdict({
-        'net': model,
-        'criterion': nn.NLLLoss(),
-    })  # sorry!
+    criterion = nn.NLLLoss()
+
+    # Numbers of parameters
+    print("number of trainable parameters found {}".format(sum(
+        param.nelement() for param in model.parameters()
+        if param.requires_grad)))
 
     best_dev_acc = 0
     best_train_acc = -np.infty
 
     if args.cuda:
-        model.net.cuda()
+        model.cuda()
 
     if args.optimizer == 'Adagrad':
-        optimizer = optim.Adagrad([param for param in model.net.parameters() if param.requires_grad],
+        optimizer = optim.Adagrad([param for param in model.parameters() if param.requires_grad],
                                   lr=args.lr, weight_decay=args.weight_decay)
         for group in optimizer.param_groups:
             for p in group['params']:
                 optstate = optimizer.state[p]
                 optstate['sum'] += args.Adagrad_init
     elif args.optimizer == 'Adadelta':
-        optimizer = optim.Adadelta([param for param in model.net.parameters() if param.requires_grad],
+        optimizer = optim.Adadelta([param for param in model.parameters() if param.requires_grad],
                                    lr=args.lr)
     else:
         optimizer = optim.SGD(
-            [param for param in model.net.parameters() if param.requires_grad],
+            [param for param in model.parameters() if param.requires_grad],
             lr=state['lr'])
 
     for epoch in range(args.epochs):
@@ -89,19 +91,19 @@ if __name__ == "__main__":
             epoch + 1, args.epochs, state['lr']))
 
         train_loss, train_acc = model_pipeline_pytorch.train(
-            model=model.net,
+            model=model,
             optimizer=optimizer,
             epoch=epoch,
             di=dm,
             args=args,
-            loss_criterion=model.criterion,
+            loss_criterion=criterion,
         )
         dev_loss, dev_acc = model_pipeline_pytorch.test(
-            model=model.net,
+            model=model,
             epoch=epoch,
             di=dm,
             args=args,
-            loss_criterion=model.criterion,
+            loss_criterion=criterion,
         )
         if dev_acc > best_dev_acc:
             print('New best model: {} vs {}'.format(dev_acc, best_dev_acc))

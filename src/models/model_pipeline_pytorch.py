@@ -122,7 +122,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
 
         grad_norm ** 0.5
         para_norm ** 0.5
-        
+
         shrinkage = args.max_norm / grad_norm
         if shrinkage < 1:
             for m in model.modules():

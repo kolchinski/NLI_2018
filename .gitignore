@@ -8,3 +8,4 @@ static/glove/*.word2vec
 *DS_Store*
 static/snli_1.0/*.labels
 static/snli_1.0/*.s*
+230_group_03_02_18.pem

@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 
 args = dotdict({
     'encoder_type': 'decomposable',
-    'lr': 0.025,
+    'intra_attn': True,
+    'lr': 0.05,
+    'lr_intra': 0.025,
     'learning_rate_decay': 1,
     'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
@@ -46,6 +48,8 @@ state = {k: v for k, v in args.items()}
 
 if __name__ == "__main__":
     print(args)
+    if args.intra_attn:
+        state['lr'] = args.lr_intra
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words

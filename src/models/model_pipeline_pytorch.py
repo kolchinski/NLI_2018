@@ -122,6 +122,7 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
 
         grad_norm ** 0.5
         para_norm ** 0.5
+        
         shrinkage = args.max_norm / grad_norm
         if shrinkage < 1:
             for m in model.modules():
@@ -187,7 +188,7 @@ def test(model, epoch, di, args, loss_criterion):
                 batch_size=args.batch_size)
         elif args.encoder_type == 'decomposable':
             sent1, sent2, targets = \
-                di.sample_train_batch(use_cuda=args.cuda)
+                di.sample_dev_batch(use_cuda=args.cuda)
             unsort1, unsort2 = None, None
             encoder_init_hidden = None
 

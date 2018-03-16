@@ -111,23 +111,20 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
         if args.encoder_type == 'decomposable':
             grad_norm = 0.
             para_norm = 0.
-
-        for m in model.modules():
-            if isinstance(m, nn.Linear):
-                grad_norm += m.weight.grad.data.norm() ** 2
-                para_norm += m.weight.data.norm() ** 2
-                if m.bias is not None:
-                    grad_norm += m.bias.grad.data.norm() ** 2
-                    para_norm += m.bias.data.norm() ** 2
-
-        grad_norm ** 0.5
-        para_norm ** 0.5
-
-        shrinkage = args.max_norm / grad_norm
-        if shrinkage < 1:
             for m in model.modules():
                 if isinstance(m, nn.Linear):
-                    m.weight.grad.data = m.weight.grad.data * shrinkage
+                    grad_norm += m.weight.grad.data.norm() ** 2
+                    para_norm += m.weight.data.norm() ** 2
+                    if m.bias is not None:
+                        grad_norm += m.bias.grad.data.norm() ** 2
+                        para_norm += m.bias.data.norm() ** 2
+            grad_norm ** 0.5
+            para_norm ** 0.5
+            shrinkage = args.max_norm / grad_norm
+            if shrinkage < 1:
+                for m in model.modules():
+                    if isinstance(m, nn.Linear):
+                        m.weight.grad.data = m.weight.grad.data * shrinkage
 
         # optimizer step
         optimizer.step()

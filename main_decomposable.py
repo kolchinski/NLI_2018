@@ -4,9 +4,7 @@ sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
-from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
-import models.siamese_pytorch as siamese_pytorch
 import models.decomposable_pytorch as decomposable_pytorch
 from utils import dotdict
 import torch

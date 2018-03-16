@@ -123,6 +123,6 @@ class SiameseClassifier(nn.Module):
             premise_maxpool * hypothesis_maxpool,
         ], 1))  # [batch_size, 3]
 
-        softmax_outputs = F.log_softmax(scores, dim=0)  # [batch_size, 3]
+        softmax_outputs = F.log_softmax(scores, dim=1)  # [batch_size, 3]
 
         return softmax_outputs

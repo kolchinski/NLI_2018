@@ -22,7 +22,7 @@ args = dotdict({
     'intra_attn': True,
     'lr': 0.025,
     'lr_intra': 0.05,
-    'learning_rate_decay': 0.9,
+    'learning_rate_decay': 0.95,
     'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
     'Adagrad_init': 0.,
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     print(args)
     if args.intra_attn:
         state['lr'] = args.lr_intra
-        state['max_norm'] = args.max_norm*1.36
+        #state['max_norm'] = args.max_norm*1.36
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
@@ -82,6 +82,17 @@ if __name__ == "__main__":
         optimizer = optim.SGD(
             [param for param in model.parameters() if param.requires_grad],
             lr=state['lr'])
+
+    # load from checkpoint if provided
+    if sys.argv[1]:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        checkpoint = model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
+        state['lr'] = 0.001
+        print('resetting lr as {}'.format(state['lr'].lr))
+        if args.cuda:
+            model.cuda()
+        optimizer = checkpoint['optimizer']
 
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
@@ -123,7 +134,7 @@ if __name__ == "__main__":
 
         if train_acc - best_train_acc < 1:
             state['lr'] *= args.learning_rate_decay
-            print('\nEpoch: [{} | {}] Update LR: {}'.format(
+            print('Epoch: [{} | {}] Update LR: {}'.format(
                 epoch + 1, args.epochs, state['lr']))
         if train_acc > best_train_acc:
             best_train_acc = train_acc

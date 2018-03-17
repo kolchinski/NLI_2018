@@ -41,7 +41,7 @@ args = dotdict({
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
     'para_init': 0.01, # parameter init Gaussian variance,
-    'intra_attn': False, # if we use intra_attention for decomposable model
+    'intra_attn': True, # if we use intra_attention for decomposable model
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}

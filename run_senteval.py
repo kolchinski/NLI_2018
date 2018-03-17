@@ -128,6 +128,16 @@ if __name__ == "__main__":
             sent_posembinput = None
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=args.batch_size)
+        if config.cuda:
+            model = model.cuda()
+            if config.encoder_type == 'transformer':
+                sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_posembinput = sent_posembinput.cuda()
+            if config.encoder_type == 'rnn':
+                if len(encoder_init_hidden):
+                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                else:
+                    encoder_init_hidden = encoder_init_hidden.cuda()
 
         embeddings = model(
             encoder_init_hidden=encoder_init_hidden,
@@ -140,8 +150,7 @@ if __name__ == "__main__":
         return embeddings
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
-    transfer_tasks = ['STS12', 'STS13', 'STS14', 'STS15', 'STS16',
-                      'MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC', 'MRPC',
+    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC', 'MRPC',
                       'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
     results = se.eval(transfer_tasks)
     print(results)

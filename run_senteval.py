@@ -54,7 +54,7 @@ state = {k: v for k, v in args.items()}
 
 # define senteval params
 params_senteval = {
-    'task_path': '../SentEval/data',
+    'task_path': './SentEval/data/senteval_data',
     'usepytorch': True,
     'kfold': 10
 }

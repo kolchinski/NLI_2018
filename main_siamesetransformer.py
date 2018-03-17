@@ -63,7 +63,7 @@ if __name__ == "__main__":
         if param.requires_grad)))
 
     # load from checkpoint if provided
-    if sys.argv[1]:
+    if len(sys.argv) > 1:
         checkpoint_dir = sys.argv[1]
         print('loading from checkpoint in {}'.format(checkpoint_dir))
         model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)

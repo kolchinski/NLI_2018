@@ -107,24 +107,31 @@ if __name__ == "__main__":
         dm = params['dm']
         model = params['sent_model']
 
+        sents = [' '.join(sent) for sent in batch]
+
         # numberize
-        sents_num, sent_bin_tensor, sent_len_tensor = dm.\
-            numberize_sents_to_tensor(batch)
+        sent_num, sent_bin_tensor, sent_len_tensor = dm.\
+            numberize_sents_to_tensor(sents)
 
         # prepare input data
         if config.encoder_type == 'transformer':
-            sent, sent_posembinput = None  # TODO
+            sent_posembinput = dm.get_pos_embedinputinput(sent_num)
             sent_unsort = None
             encoder_init_hidden = None
         elif config.encoder_type == 'rnn':
-            sent, sent_unsort = None  # TODO
+            sent_num, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
+                seq_tensor=sent_num,
+                seq_lengths=sent_len_tensor,
+                embed=model.encoder.embedding,
+                use_cuda=config.use_cuda,
+            )
             sent_posembinput = None
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=args.batch_size)
 
         embeddings = model(
             encoder_init_hidden=encoder_init_hidden,
-            encoder_input=sent,
+            encoder_input=sent_num,
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
             batch_size=config.batch_size

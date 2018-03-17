@@ -211,6 +211,16 @@ class DataManager:
             Variable(targets_tensor),  # [batch_size,]
         )
 
+    def get_pos_embedinputinput(self, sents):
+        pos_embedinput_arr = np.zeros((len(sents), self.config.max_length))
+        for i, sent in enumerate(sents):
+            for j, _ in enumerate(sent):
+                if j < self.config.max_length:
+                    pos_embedinput_arr[i, j] = j + 1
+        print(pos_embedinput_arr.shape)
+        pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
+        return pos_embedinput_tensor
+
     def load_tok_data(self, path, train=False):
         sent1s, sent2s, targets = [], [], []
         path_label = path+'labels'
@@ -265,18 +275,9 @@ class DataManager:
         print('done.')
 
         # positional embeddings
-        def get_pos_embedinputinput(sents):
-            pos_embedinput_arr = np.zeros((len(sents), self.config.max_length))
-            for i, sent in enumerate(sents):
-                for j, _ in enumerate(sent):
-                    if j < self.config.max_length:
-                        pos_embedinput_arr[i, j] = j + 1
-            print(pos_embedinput_arr.shape)
-            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
-            return pos_embedinput_tensor
-        sent1_pos_embedinput_tensor = get_pos_embedinputinput(
+        sent1_pos_embedinput_tensor = self.get_pos_embedinputinput(
             sent1s_num)  # [batch_size, max_len]
-        sent2_pos_embedinput_tensor = get_pos_embedinputinput(
+        sent2_pos_embedinput_tensor = self.get_pos_embedinputinput(
             sent2s_num)
 
 

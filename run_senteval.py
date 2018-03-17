@@ -122,7 +122,7 @@ if __name__ == "__main__":
             sent_num, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
                 seq_tensor=sent_num,
                 seq_lengths=sent_len_tensor,
-                embed=model.encoder.embedding,
+                embed=model.embed,
                 use_cuda=config.use_cuda,
             )
             sent_posembinput = None

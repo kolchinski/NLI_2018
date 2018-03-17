@@ -145,7 +145,8 @@ if __name__ == "__main__":
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
             batch_size=config.batch_size
-        )
+        ).data.cpu().numpy()
+        print(embeddings)
 
         return embeddings
 

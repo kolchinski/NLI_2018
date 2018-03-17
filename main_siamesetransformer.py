@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 args = dotdict({
     'encoder_type': 'transformer',
-    'lr': 0.01,
+    'lr': 0.005,
     'learning_rate_decay': 0.8,
     'max_length': 50,
     'epochs': 20,
@@ -61,6 +61,14 @@ if __name__ == "__main__":
     print("number of trainable parameters found {}".format(sum(
         param.nelement() for param in model.parameters()
         if param.requires_grad)))
+
+    # load from checkpoint if provided
+    if sys.argv[1]:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
+        print('resetting lr as {}'.format(args.lr))
+
 
     best_dev_acc = 0
     best_train_acc = -np.infty

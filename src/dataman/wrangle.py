@@ -1,12 +1,14 @@
-import constants
+import sys
+sys.path.append('../')
+import src.constants as constants
+import src.models.vocab_pytorch as vocab_pytorch
+
 import json
 import logging
 import numpy as np
-import sys
-sys.path.append('../')
+
 import torch
 from torch.autograd import Variable
-import models.vocab_pytorch as vocab_pytorch
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +211,16 @@ class DataManager:
             Variable(targets_tensor),  # [batch_size,]
         )
 
+    def get_pos_embedinputinput(self, sents):
+        pos_embedinput_arr = np.zeros((len(sents), self.config.max_length))
+        for i, sent in enumerate(sents):
+            for j, _ in enumerate(sent):
+                if j < self.config.max_length:
+                    pos_embedinput_arr[i, j] = j + 1
+        print(pos_embedinput_arr.shape)
+        pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
+        return pos_embedinput_tensor
+
     def load_tok_data(self, path, train=False):
         sent1s, sent2s, targets = [], [], []
         path_label = path+'labels'
@@ -256,29 +268,17 @@ class DataManager:
         )
 
         print('numberizing')
-        sent1s_num = [self.vocab.numberize_sentence(s) for s in sent1s]
-        sent2s_num = [self.vocab.numberize_sentence(s) for s in sent2s]
+        sent1s_num, sent1_bin_tensor, sent1_len_tensor = self.\
+            numberize_sents_to_tensor(sent1s)
+        sent2s_num, sent2_bin_tensor, sent2_len_tensor = self.\
+            numberize_sents_to_tensor(sent2s)
         print('done.')
 
-        # load numberized into tensors
-        sent1_bin_tensor, sent1_len_tensor = self.get_numberized_tensor(
-            sent1s_num)
-        sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
-            sent2s_num)
-
         # positional embeddings
-        def get_pos_embedinputinput(sents):
-            pos_embedinput_arr = np.zeros(shape=(len(sents), self.config.max_length))
-            for i, sent in enumerate(sents):
-                for j, _ in enumerate(sent):
-                    if j < self.config.max_length:
-                        pos_embedinput_arr[i, j] = j + 1
-            print(pos_embedinput_arr.shape)
-            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
-            return pos_embedinput_tensor
-
-        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s_num)  # [batch_size, max_len]
-        sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s_num)
+        sent1_pos_embedinput_tensor = self.get_pos_embedinputinput(
+            sent1s_num)  # [batch_size, max_len]
+        sent2_pos_embedinput_tensor = self.get_pos_embedinputinput(
+            sent2s_num)
 
 
         return (
@@ -288,16 +288,22 @@ class DataManager:
             targets, n_rows
         )
 
-    def get_numberized_tensor(self, sent_num):
-        """ sent_num: list of lists of word ids """
-        dat_size = len(sent_num)
+    def numberize_sents_to_tensor(self, sents):
+        sents_num = [self.vocab.numberize_sentence(s) for s in sents]
+
+        return self.get_numberized_tensor(sents_num)
+
+
+    def get_numberized_tensor(self, sents_num):
+        """ sents_num: list of lists of word ids """
+        dat_size = len(sents_num)
         bin_tensor = torch.LongTensor(dat_size, self.max_len)
         bin_tensor.fill_(vocab_pytorch.PAD_token)
         # slen_max = htable_params.max_len
         slen_tensor = torch.IntTensor(dat_size,)
 
         b = 0
-        for sent_wordids in sent_num:
+        for sent_wordids in sents_num:
             slen = min(len(sent_wordids), self.max_len)
             slen_tensor[b] = slen
             for w in range(slen):
@@ -305,4 +311,4 @@ class DataManager:
                 bin_tensor[b, slen - 1 - w] = wordid  # fill in reverse
             b += 1
 
-        return bin_tensor, slen_tensor
+        return sents_num, bin_tensor, slen_tensor

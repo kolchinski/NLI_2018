@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-import transformer_pytorch
+import src.models.transformer_pytorch as transformer_pytorch
 
 
 class RNNEncoder(nn.Module):
@@ -35,6 +35,43 @@ class TransformerEncoder(nn.Module):
     def __init__(self, config):
         super(RNNEncoder, self).__init__()
         self.config = config
+
+
+class SiameseClassifierSentEmbed(nn.Module):
+
+    def __init__(self, config, embed, encoder):
+        super(SiameseClassifierSentEmbed, self).__init__()
+        self.config = config
+        self.embed = embed
+        self.encoder = encoder
+
+    def forward(
+        self,
+        encoder_input,
+        encoder_pos_emb_input,
+        encoder_unsort,
+        encoder_init_hidden,
+        batch_size
+    ):
+        prem_embed = encoder_input
+
+        if self.config.encoder_type == 'transformer':
+            premise = self.encoder(  # [max_len, batch_size, d_model]
+                src_seq=encoder_input,
+                src_pos=encoder_pos_emb_input,
+            )
+        else:
+            premise = self.encoder(
+                inputs=prem_embed,
+                hidden=encoder_init_hidden,
+                batch_size=batch_size
+            )
+            premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
+            premise = premise.index_select(1, encoder_unsort)
+
+        premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]
+
+        return premise_maxpool
 
 
 class SiameseClassifier(nn.Module):

@@ -7,6 +7,7 @@ import dataman.wrangle as wrangle
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.decomposable_pytorch as decomposable_pytorch
 from utils import dotdict
+from collections import defaultdict
 import torch
 import torch.optim as optim
 import sys
@@ -89,10 +90,12 @@ if __name__ == "__main__":
         print('loading from checkpoint in {}'.format(checkpoint_dir))
         checkpoint = model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
         state['lr'] = 0.001
-        print('resetting lr as {}'.format(state['lr'].lr))
+        print('resetting lr as {}'.format(state['lr']))
         if args.cuda:
             model.cuda()
-        optimizer = checkpoint['optimizer']
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        optimizer.state = defaultdict(dict, optimizer.state)
+        #print(type(optimizer))
 
     for epoch in range(args.epochs):
         dm.shuffle_train_data()

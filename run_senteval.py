@@ -108,6 +108,8 @@ if __name__ == "__main__":
         model = params['sent_model']
 
         sents = [' '.join(sent) for sent in batch]
+        batch_size = len(batch)
+        config.batch_size = batch_size
 
         # numberize
         sent_num, sent_bin_tensor, sent_len_tensor = dm.\
@@ -127,7 +129,7 @@ if __name__ == "__main__":
             )
             sent_posembinput = None
             encoder_init_hidden = model.encoder.initHidden(
-                batch_size=args.batch_size)
+                batch_size=batch_size)
         if config.cuda:
             model = model.cuda()
             if config.encoder_type == 'transformer':
@@ -144,7 +146,7 @@ if __name__ == "__main__":
             encoder_input=sent_bin_tensor,
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
-            batch_size=config.batch_size
+            batch_size=batch_size
         ).data.cpu().numpy()
         print(embeddings)
 

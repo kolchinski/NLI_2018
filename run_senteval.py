@@ -119,11 +119,11 @@ if __name__ == "__main__":
             sent_unsort = None
             encoder_init_hidden = None
         elif config.encoder_type == 'rnn':
-            sent_num, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
-                seq_tensor=sent_num,
+            sent_bin_tensor, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
+                seq_tensor=sent_bin_tensor,
                 seq_lengths=sent_len_tensor,
                 embed=model.embed,
-                use_cuda=config.use_cuda,
+                use_cuda=config.cuda,
             )
             sent_posembinput = None
             encoder_init_hidden = model.encoder.initHidden(
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
         embeddings = model(
             encoder_init_hidden=encoder_init_hidden,
-            encoder_input=sent_num,
+            encoder_input=sent_bin_tensor,
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
             batch_size=config.batch_size

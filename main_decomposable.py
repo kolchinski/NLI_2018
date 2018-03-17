@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 args = dotdict({
     'encoder_type': 'decomposable',
-    'intra_attn': False,
+    'intra_attn': True,
     'lr': 0.025,
-    'lr_intra': 0.025,
-    'learning_rate_decay': 1,
+    'lr_intra': 0.05,
+    'learning_rate_decay': 0.9,
     'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
     'Adagrad_init': 0.,
@@ -121,7 +121,9 @@ if __name__ == "__main__":
                 'optimizer': optimizer.state_dict()
             }, is_best=dev_acc > best_dev_acc)
 
-        if train_acc - best_train_acc < 3:
+        if train_acc - best_train_acc < 1:
             state['lr'] *= args.learning_rate_decay
+            print('\nEpoch: [{} | {}] Update LR: {}'.format(
+                epoch + 1, args.epochs, state['lr']))
         if train_acc > best_train_acc:
             best_train_acc = train_acc

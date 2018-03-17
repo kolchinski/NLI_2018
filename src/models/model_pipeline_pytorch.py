@@ -292,3 +292,8 @@ def adjust_learning_rate(optimizer, epoch, args, state):
         state['lr'] *= args.gamma
         for param_group in optimizer.param_groups:
             param_group['lr'] = state['lr']
+
+
+def change_learning_rate(optimizer, lr):
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr

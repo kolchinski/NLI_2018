@@ -22,7 +22,7 @@ args = dotdict({
     'encoder_type': 'decomposable',
     'intra_attn': True,
     'lr': 0.025,
-    'lr_intra': 0.05,
+    'lr_intra': 0.025,
     'learning_rate_decay': 0.95,
     'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
@@ -48,7 +48,6 @@ if __name__ == "__main__":
     print(args)
     if args.intra_attn:
         state['lr'] = args.lr_intra
-        #state['max_norm'] = args.max_norm*1.36
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
@@ -71,14 +70,14 @@ if __name__ == "__main__":
 
     if args.optimizer == 'Adagrad':
         optimizer = optim.Adagrad([param for param in model.parameters() if param.requires_grad],
-                                  lr=args.lr, weight_decay=args.weight_decay)
+                                  lr=state['lr'], weight_decay=args.weight_decay)
         for group in optimizer.param_groups:
             for p in group['params']:
                 optstate = optimizer.state[p]
                 optstate['sum'] += args.Adagrad_init
     elif args.optimizer == 'Adadelta':
         optimizer = optim.Adadelta([param for param in model.parameters() if param.requires_grad],
-                                   lr=args.lr)
+                                   lr=state['lr'])
     else:
         optimizer = optim.SGD(
             [param for param in model.parameters() if param.requires_grad],
@@ -89,13 +88,13 @@ if __name__ == "__main__":
         checkpoint_dir = sys.argv[1]
         print('loading from checkpoint in {}'.format(checkpoint_dir))
         checkpoint = model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
-        state['lr'] = 0.001
-        print('resetting lr as {}'.format(state['lr']))
         if args.cuda:
             model.cuda()
         optimizer.load_state_dict(checkpoint['optimizer'])
         optimizer.state = defaultdict(dict, optimizer.state)
-        #print(type(optimizer))
+        state['lr'] = 0.005
+        print('resetting lr as {}'.format(state['lr']))
+        model_pipeline_pytorch.change_learning_rate(optimizer,state['lr'])
 
     for epoch in range(args.epochs):
         dm.shuffle_train_data()
@@ -137,6 +136,7 @@ if __name__ == "__main__":
 
         if train_acc - best_train_acc < 1:
             state['lr'] *= args.learning_rate_decay
+            model_pipeline_pytorch.change_learning_rate(optimizer, state['lr'])
             print('Epoch: [{} | {}] Update LR: {}'.format(
                 epoch + 1, args.epochs, state['lr']))
         if train_acc > best_train_acc:

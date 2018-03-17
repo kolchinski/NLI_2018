@@ -148,7 +148,6 @@ if __name__ == "__main__":
             encoder_unsort=sent_unsort,
             batch_size=batch_size
         ).data.cpu().numpy()
-        print(embeddings)
 
         return embeddings
 

@@ -1,5 +1,5 @@
 # python 3
-from models.basemodel import BaseModel
+
 import torch.nn as nn
 import torch
 from torch.autograd import Variable
@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from torch.autograd import Variable
 import torch.nn.functional as F
-import transformer_pytorch
+import src.models.transformer_pytorch as transformer_pytorch
 
 use_cuda = torch.cuda.is_available()
 
@@ -43,9 +43,8 @@ class TransformerEncoder(nn.Module):
         self.config = config
 
 
-class Seq2SeqPytorch(BaseModel):
+class Seq2SeqPytorch(object):
     def __init__(self, args, vocab):
-        BaseModel.__init__(self)
         self.lr = args.lr
         self.max_length = args.max_length
         self.epochs = args.epochs

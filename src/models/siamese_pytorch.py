@@ -102,7 +102,6 @@ class SiameseClassifier(nn.Module):
         seq_in_size = 4 * config.hidden_size
         if self.config.bidirectional:
             seq_in_size *= 2
-        assert len(config.mlp_classif_hidden_size_list) == 2
 
         classifier_transforms = []
         prev_hidden_size = seq_in_size

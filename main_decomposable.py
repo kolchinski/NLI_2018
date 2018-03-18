@@ -23,7 +23,7 @@ args = dotdict({
     'intra_attn': True,
     'lr': 0.025,
     'lr_intra': 0.025,
-    'learning_rate_decay': 0.95,
+    'learning_rate_decay': 0.9,
     'para_init': 0.01, # parameter init Gaussian variance
     'optimizer': 'Adagrad',
     'Adagrad_init': 0.,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
             model.cuda()
         optimizer.load_state_dict(checkpoint['optimizer'])
         optimizer.state = defaultdict(dict, optimizer.state)
-        state['lr'] = 0.005
+        state['lr'] = 0.0025
         print('resetting lr as {}'.format(state['lr']))
         model_pipeline_pytorch.change_learning_rate(optimizer,state['lr'])
 

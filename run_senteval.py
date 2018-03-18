@@ -9,6 +9,10 @@ import senteval
 # import SentEval.senteval as senteval
 
 import torch.nn as nn
+from torch.autograd import Variable
+import torch
+import torch.optim as optim
+
 import numpy as np
 import src.dataman.wrangle as wrangle
 import src.models.load_embeddings as load_embeddings
@@ -18,14 +22,11 @@ import src.models.siamese_pytorch as siamese_pytorch
 from src.utils import dotdict
 import src.constants as constants
 
-import torch
-import torch.optim as optim
 import sys
 import logging
 import time
 from pytorch_classification.utils import (
     Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig)
-
 
 
 args = dotdict({
@@ -56,7 +57,7 @@ state = {k: v for k, v in args.items()}
 params_senteval = {
     'task_path': './SentEval/data/senteval_data',
     'usepytorch': True,
-    'kfold': 10
+    'kfold': 5,
 }
 params_senteval['classifier'] = {
     'nhid': 0,
@@ -94,8 +95,10 @@ if __name__ == "__main__":
             config=args, embed=model.embed, encoder=model.encoder)
 
         model.eval()
+        sent_model.eval()
         if args.cuda:
             model = model.cuda()
+            sent_model = sent_model.cuda()
 
         params['config'] = args
         params['dm'] = dm
@@ -117,7 +120,8 @@ if __name__ == "__main__":
 
         # prepare input data
         if config.encoder_type == 'transformer':
-            sent_posembinput = dm.get_pos_embedinputinput(sent_num)
+            sent_bin_tensor = Variable(sent_bin_tensor)
+            sent_posembinput = Variable(dm.get_pos_embedinputinput(sent_num))
             sent_unsort = None
             encoder_init_hidden = None
         elif config.encoder_type == 'rnn':

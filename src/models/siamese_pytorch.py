@@ -93,7 +93,8 @@ class SiameseClassifier(nn.Module):
         elif config.encoder_type == 'rnn':
             self.encoder = RNNEncoder(config)
         else:
-            raise Exception("encoder_type not here {}".format(config.encoder_type))
+            raise Exception("encoder_type not here {}".format(
+                config.encoder_type))
 
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
@@ -102,12 +103,20 @@ class SiameseClassifier(nn.Module):
         if self.config.bidirectional:
             seq_in_size *= 2
         assert len(config.mlp_classif_hidden_size_list) == 2
-        self.out = nn.Sequential(
-            nn.Linear(seq_in_size, config.mlp_classif_hidden_size_list[0]),
-            self.dropout,
-            self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[0], config.d_out),
+
+        classifier_transforms = []
+        prev_hidden_size = seq_in_size
+        for next_hidden_size in config.mlp_classif_hidden_size_list:
+            classifier_transforms.extend([
+                nn.Linear(prev_hidden_size, next_hidden_size),
+                self.relu,
+                self.dropout,
+            ])
+            prev_hidden_size = next_hidden_size
+        classifier_transforms.append(
+            nn.Linear(prev_hidden_size, config.d_out)
         )
+        self.out = nn.Sequential(*classifier_transforms)
 
     def forward(
         self,

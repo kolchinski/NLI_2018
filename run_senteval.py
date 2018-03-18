@@ -100,7 +100,8 @@ if __name__ == "__main__":
             sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
                 config=args, embed=model.embed, encoder=model.encoder)
         elif args.type == 'decomposable':
-            sent_model = model.encoder
+            sent_model = decomposable_pytorch.DecomposableClassifierSentEmbed(
+                config=args, encoder=model.encoder)
 
         model.eval()
         sent_model.eval()
@@ -144,6 +145,9 @@ if __name__ == "__main__":
                 batch_size=batch_size)
         elif args.encoder_type == 'decomposable':
             sent_bin_tensor = Variable(sent_bin_tensor)
+            sent_posembinput = None
+            sent_unsort = None
+            encoder_init_hidden = None
         else:
             raise Exception('encoder_type not supported {}'.format(
                 args.encoder_type))
@@ -160,18 +164,13 @@ if __name__ == "__main__":
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
 
-        if args.encoder_type == 'decomposable':
-            embeddings = model(
-                sent=sent_bin_tensor,
-            ).data.cpu().numpy()
-        else:
-            embeddings = model(
-                encoder_init_hidden=encoder_init_hidden,
-                encoder_input=sent_bin_tensor,
-                encoder_pos_emb_input=sent_posembinput,
-                encoder_unsort=sent_unsort,
-                batch_size=batch_size
-            ).data.cpu().numpy()
+        embeddings = model(
+            encoder_init_hidden=encoder_init_hidden,
+            encoder_input=sent_bin_tensor,
+            encoder_pos_emb_input=sent_posembinput,
+            encoder_unsort=sent_unsort,
+            batch_size=batch_size
+        ).data.cpu().numpy()
 
         return embeddings
 

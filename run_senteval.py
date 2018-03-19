@@ -36,7 +36,7 @@ args = dotdict({
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
     'batch_size': 128,
     'batches_per_epoch': 3000,

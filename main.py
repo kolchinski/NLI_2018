@@ -62,6 +62,14 @@ if __name__ == "__main__":
     best_dev_acc = 0
     best_train_acc = -np.infty
 
+    # load trained model from checkpoint
+    if len(sys.argv) > 1:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
+        state['lr'] = 0.01
+        print('resetting lr as {}'.format(state['lr']))
+
     criterion = nn.NLLLoss()
 
     for epoch in range(args.epochs):

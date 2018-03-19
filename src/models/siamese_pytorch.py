@@ -20,9 +20,9 @@ class RNNEncoder(nn.Module):
 
     def initHidden(self, batch_size):
         if self.config.bidirectional:
-            state_shape = 2, batch_size, self.config.hidden_size
+            state_shape = 2*self.config.n_layers, batch_size, self.config.hidden_size
         else:
-            state_shape = 1, batch_size, self.config.hidden_size
+            state_shape = 1*self.config.n_layers, batch_size, self.config.hidden_size
         h0 = c0 = Variable(torch.zeros(state_shape))
         return (h0, c0)
 

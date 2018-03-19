@@ -30,7 +30,7 @@ class SquadClassifier(nn.Module):
             ])
             prev_hidden_size = next_hidden_size
         classifier_transforms.append(
-            nn.Linear(prev_hidden_size, 2)
+            nn.Linear(prev_hidden_size, config.d_out)  # d_out=2
         )
         self.out = nn.Sequential(*classifier_transforms)
 
@@ -45,7 +45,6 @@ class SquadClassifier(nn.Module):
         encoder_init_hidden,
         batch_size,
     ):
-
         if self.config.encoder_type == 'rnn':
             a1 = self.encoder(
                 inputs=a1_packed_tensor,

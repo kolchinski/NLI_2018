@@ -69,7 +69,8 @@ def train(model, optimizer, epoch, di, args, loss_criterion):
                 sent2 = sent2.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
-                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                    encoder_init_hidden = [
+                        x.cuda() for x in encoder_init_hidden]
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
             loss_criterion = loss_criterion.cuda()
@@ -202,7 +203,8 @@ def test(model, epoch, di, args, loss_criterion):
                 sent2 = sent2.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
-                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                    encoder_init_hidden = [
+                        x.cuda() for x in encoder_init_hidden]
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
 

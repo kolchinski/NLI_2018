@@ -158,7 +158,7 @@ class SquadDataManager(DataManager):
         )
 
     def load_tok_data(self, path, train=False):
-        a1s, a2s, qs, targets = [], [], []
+        a1s, a2s, qs, targets = [], [], [], []
         with open(path) as f:
             n_rows = 0
             for line in f.readlines():

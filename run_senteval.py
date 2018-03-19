@@ -31,8 +31,11 @@ from pytorch_classification.utils import (
 
 
 args = dotdict({
-    'type': 'decomposable',
-    'encoder_type': 'decomposable',
+    #'type': 'decomposable',
+    #'encoder_type': 'decomposable',
+    #'type': 'siamese',
+    'sent_embed_type': 'meanpool',
+    'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
@@ -129,6 +132,8 @@ if __name__ == "__main__":
         sent_num, sent_bin_tensor, sent_len_tensor = dm.\
             numberize_sents_to_tensor(sents)
 
+        sent_len_tensor = Variable(sent_len_tensor)
+
         # prepare input data
         if config.encoder_type == 'transformer':
             sent_bin_tensor = Variable(sent_bin_tensor)
@@ -166,23 +171,15 @@ if __name__ == "__main__":
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
 
-        if args.encoder_type == 'decomposable':
-            embeddings = model(
-                encoder_init_hidden=encoder_init_hidden,
-                encoder_input=sent_bin_tensor,
-                encoder_pos_emb_input=sent_posembinput,
-                encoder_unsort=sent_unsort,
-                batch_size=batch_size,
-                sent_len=sent_len_tensor,
-            ).data.cpu().numpy()
-        else:
-            embeddings = model(
-                encoder_init_hidden=encoder_init_hidden,
-                encoder_input=sent_bin_tensor,
-                encoder_pos_emb_input=sent_posembinput,
-                encoder_unsort=sent_unsort,
-                batch_size=batch_size
-            ).data.cpu().numpy()
+
+        embeddings = model(
+            encoder_init_hidden=encoder_init_hidden,
+            encoder_input=sent_bin_tensor,
+            encoder_len=sent_len_tensor,
+            encoder_pos_emb_input=sent_posembinput,
+            encoder_unsort=sent_unsort,
+            batch_size=batch_size
+        ).data.cpu().numpy()
 
         return embeddings
 

@@ -35,7 +35,7 @@ args = dotdict({
     'bidirectional': False,
     'embedding_size': 300,
     'fix_emb': True,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.3,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),

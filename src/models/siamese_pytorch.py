@@ -1,4 +1,5 @@
 # adapted from https://github.com/pytorch/examples/blob/master/snli/model.py
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -66,7 +67,7 @@ class SiameseClassifierSentEmbed(nn.Module):
                 hidden=encoder_init_hidden,
                 batch_size=batch_size
             )
-            premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
+            premise = nn.utils.rnn.pad_packed_sequence(premise, padding_value=-np.infty)[0]
             premise = premise.index_select(1, encoder_unsort)
 
         premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]

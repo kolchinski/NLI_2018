@@ -9,13 +9,14 @@ from torch.autograd import Variable
 
 class encoder(nn.Module):
 
-    def __init__(self, num_embeddings, embedding_size, hidden_size, para_init, fix_emb):
+    def __init__(self, num_embeddings, embedding_size, hidden_size, para_init, fix_emb, intra_attn):
         super(encoder, self).__init__()
 
         self.num_embeddings = num_embeddings
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
         self.para_init = para_init
+        self.intra_attn = intra_attn
 
         self.embedding = nn.Embedding(self.num_embeddings, self.embedding_size)
         if fix_emb:
@@ -23,55 +24,10 @@ class encoder(nn.Module):
 
         self.input_linear = nn.Linear(
             self.embedding_size, self.hidden_size, bias=False)  # linear transformation
+        if self.intra_attn:
+            self.f_intra = self._mlp_layers(self.hidden_size, self.hidden_size)
+
         for m in self.modules():
-            if isinstance(m, nn.Linear):
-                m.weight.data.normal_(0, self.para_init)
-                # m.bias.data.uniform_(-0.01, 0.01)
-
-    def forward(self, sent1, sent2):
-        '''
-               sent: batch_size x length (Long tensor)
-        '''
-        batch_size = sent1.size(0)
-        sent1 = self.embedding(sent1)
-        sent2 = self.embedding(sent2)
-
-        sent1 = sent1.view(-1, self.embedding_size)
-        sent2 = sent2.view(-1, self.embedding_size)
-
-        sent1_linear = self.input_linear(sent1).view(
-            batch_size, -1, self.hidden_size)
-        sent2_linear = self.input_linear(sent2).view(
-            batch_size, -1, self.hidden_size)
-
-        return sent1_linear, sent2_linear
-
-class SNLIClassifier(nn.Module):
-    '''
-        intra sentence attention
-    '''
-
-    def __init__(self, config):
-        super(SNLIClassifier, self).__init__()
-
-        self.hidden_size = config.hidden_size
-        self.label_size = config.d_out
-        self.para_init = config.para_init
-
-        self.encoder = encoder(config.n_embed, config.embedding_size, self.hidden_size, self.para_init, config.fix_emb)
-
-        self.mlp_f = self._mlp_layers(self.hidden_size, self.hidden_size)
-        self.mlp_g = self._mlp_layers(2 * self.hidden_size, self.hidden_size)
-        self.mlp_h = self._mlp_layers(2 * self.hidden_size, self.hidden_size)
-
-        self.final_linear = nn.Linear(
-            self.hidden_size, self.label_size, bias=True)
-
-        self.log_prob = nn.LogSoftmax()
-
-        '''initialize parameters'''
-        for m in self.modules():
-            # print(m)
             if isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, self.para_init)
                 if m.bias is not None:
@@ -89,48 +45,130 @@ class SNLIClassifier(nn.Module):
         mlp_layers.append(nn.ReLU())
         return nn.Sequential(*mlp_layers)   # * used to unpack list
 
+    def forward(self, sent):
+        '''
+               sent: batch_size x length (Long tensor)
+        '''
+        batch_size = sent.size(0)
+        len = sent.size(1)
+
+        sent = self.embedding(sent)
+
+        sent = sent.view(-1, self.embedding_size)
+
+        sent_linear = self.input_linear(sent).view(
+            batch_size, -1, self.hidden_size)
+
+        # sent_linear: batch_size x length x hidden_size
+        if self.intra_attn:
+            f = self.f_intra(sent_linear.view(-1, self.hidden_size))
+            f = f.view(-1, len, self.hidden_size)
+            # batch_size x length x hidden_size
+            score = torch.bmm(f, torch.transpose(f, 1, 2))
+            # f_{ij} batch_size x len x len
+            prob = F.softmax(score.view(-1, len), dim=1).view(-1, len, len)
+            # batch_size x len x len
+            sent_attn = torch.bmm(prob, sent_linear)
+            # batch_size x length x hidden_size
+            return torch.cat((sent_linear,sent_attn),2)
+
+        else:
+            return sent_linear
+
+class SNLIClassifier(nn.Module):
+    '''
+        intra sentence attention
+    '''
+
+    def __init__(self, config):
+        super(SNLIClassifier, self).__init__()
+
+        self.hidden_size = config.hidden_size
+        self.label_size = config.d_out
+        self.para_init = config.para_init
+        self.intra_attn = config.intra_attn
+
+        self.encoder = encoder(config.n_embed, config.embedding_size, self.hidden_size, self.para_init, config.fix_emb, config.intra_attn)
+
+        if self.intra_attn:
+            self.encoding_size = 2*self.hidden_size
+        else:
+            self.encoding_size = self.hidden_size
+
+        self.mlp_f = self._mlp_layers(self.encoding_size, self.hidden_size, self.hidden_size)
+        self.mlp_g = self._mlp_layers(2 * self.encoding_size, self.hidden_size, self.hidden_size)
+        self.mlp_h = self._mlp_layers(2 * self.hidden_size, self.hidden_size, self.hidden_size)
+
+        self.final_linear = nn.Linear(
+            self.hidden_size, self.label_size, bias=True)
+
+        self.log_prob = nn.LogSoftmax(dim=1)
+
+        '''initialize parameters'''
+        for m in self.modules():
+            # print(m)
+            if isinstance(m, nn.Linear):
+                m.weight.data.normal_(0, self.para_init)
+                if m.bias is not None:
+                    m.bias.data.normal_(0, self.para_init)
+
+    def _mlp_layers(self, input_dim, output_dim, hidden_dim):
+        mlp_layers = []
+        mlp_layers.append(nn.Dropout(p=0.2))
+        mlp_layers.append(nn.Linear(
+            input_dim, hidden_dim, bias=True))
+        mlp_layers.append(nn.ReLU())
+        mlp_layers.append(nn.Dropout(p=0.2))
+        mlp_layers.append(nn.Linear(
+            hidden_dim, output_dim, bias=True))
+        mlp_layers.append(nn.ReLU())
+        return nn.Sequential(*mlp_layers)   # * used to unpack list
+
     def forward(self, sent1, sent2):
         '''
                        sent: batch_size x length (Long tensor)
         '''
 
-        # sent_linear: batch_size x length x hidden_size
-        sent1_linear, sent2_linear = self.encoder(sent1=sent1, sent2=sent2)
+        # sent_linear: batch_size x length x encoding_size
+        sent1_linear = self.encoder(sent=sent1)
+        sent2_linear = self.encoder(sent=sent2)
 
         len1 = sent1_linear.size(1)
         len2 = sent2_linear.size(1)
 
         '''attend'''
 
-        f1 = self.mlp_f(sent1_linear.view(-1, self.hidden_size))
-        f2 = self.mlp_f(sent2_linear.view(-1, self.hidden_size))
+        f1 = self.mlp_f(sent1_linear.view(-1, self.encoding_size))
+        f2 = self.mlp_f(sent2_linear.view(-1, self.encoding_size))
+
 
         f1 = f1.view(-1, len1, self.hidden_size)
         # batch_size x len1 x hidden_size
         f2 = f2.view(-1, len2, self.hidden_size)
         # batch_size x len2 x hidden_size
 
+
         score1 = torch.bmm(f1, torch.transpose(f2, 1, 2))
         # e_{ij} batch_size x len1 x len2
-        prob1 = F.softmax(score1.view(-1, len2)).view(-1, len1, len2)
+        prob1 = F.softmax(score1.view(-1, len2), dim=1).view(-1, len1, len2)
         # batch_size x len1 x len2
 
         score2 = torch.transpose(score1.contiguous(), 1, 2)
         score2 = score2.contiguous()
         # e_{ji} batch_size x len2 x len1
-        prob2 = F.softmax(score2.view(-1, len1)).view(-1, len2, len1)
+        prob2 = F.softmax(score2.view(-1, len1), dim=1).view(-1, len2, len1)
         # batch_size x len2 x len1
 
         sent1_combine = torch.cat(
             (sent1_linear, torch.bmm(prob1, sent2_linear)), 2)
-        # batch_size x len1 x (hidden_size x 2)
+        # batch_size x len1 x (encoding_size x 2)
         sent2_combine = torch.cat(
             (sent2_linear, torch.bmm(prob2, sent1_linear)), 2)
-        # batch_size x len2 x (hidden_size x 2)
+        # batch_size x len2 x (encoding_size x 2)
 
         '''sum'''
-        g1 = self.mlp_g(sent1_combine.view(-1, 2 * self.hidden_size))
-        g2 = self.mlp_g(sent2_combine.view(-1, 2 * self.hidden_size))
+        g1 = self.mlp_g(sent1_combine.view(-1, 2 * self.encoding_size))
+        g2 = self.mlp_g(sent2_combine.view(-1, 2 * self.encoding_size))
         g1 = g1.view(-1, len1, self.hidden_size)
         # batch_size x len1 x hidden_size
         g2 = g2.view(-1, len2, self.hidden_size)
@@ -156,6 +194,6 @@ class SNLIClassifier(nn.Module):
         # print h.data
 
         log_prob = self.log_prob(h)
-        #log_prob = F.log_softmax(h, dim=0)
+        #log_prob = F.log_softmax(h, dim=1)
 
         return log_prob

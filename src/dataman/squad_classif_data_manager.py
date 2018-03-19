@@ -39,7 +39,6 @@ class SquadDataManager(DataManager):
         self.curr_batch_dev = 0
         self.num_batch_train = self.train_size // self.batch_size
         self.num_batch_dev = self.dev_size // self.batch_size
-        self.num_batch_test = self.test_size // self.batch_size
 
     def shuffle_train_data(self):
         permutation_np = np.random.permutation(len(self.train_ys))

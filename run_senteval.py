@@ -42,8 +42,9 @@ args = dotdict({
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
-    'n_layers': 1,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
+    'n_layers': 2,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
@@ -129,7 +130,7 @@ if __name__ == "__main__":
         elif config.encoder_type == 'rnn':
             sent_bin_tensor, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
                 seq_tensor=sent_bin_tensor,
-                seq_lengths=sent_len_tensor,
+                seq_lengths=sent_len_tensor.data,
                 embed=model.embed,
                 use_cuda=config.cuda,
             )
@@ -140,8 +141,10 @@ if __name__ == "__main__":
             model = model.cuda()
             if config.encoder_type == 'transformer':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
                 sent_posembinput = sent_posembinput.cuda()
             if config.encoder_type == 'rnn':
+                sent_len_tensor = sent_len_tensor.cuda()
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
                 else:

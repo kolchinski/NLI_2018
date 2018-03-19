@@ -31,6 +31,7 @@ args = dotdict({
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
     'n_layers': 2,
     'bidirectional': True,
     'embedding_size': 300,

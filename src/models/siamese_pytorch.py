@@ -13,21 +13,35 @@ class RNNEncoder(nn.Module):
         super(RNNEncoder, self).__init__()
         self.config = config
         input_size = config.embedding_size
-        self.rnn = nn.LSTM(
-            input_size=input_size, hidden_size=config.hidden_size,
-            num_layers=config.n_layers, dropout=config.dp_ratio,
-            bidirectional=config.bidirectional)
+        if config.n_layers == 1:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.hidden_size,
+                num_layers=config.n_layers, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+        elif config.n_layers == 2:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.layer1_hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+            self.rnn2 = nn.LSTM(
+                input_size=config.layer1_hidden_size*2, hidden_size=config.hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
 
     def initHidden(self, batch_size):
         if self.config.bidirectional:
-            state_shape = 2*self.config.n_layers, batch_size, self.config.hidden_size
+            state_shape = 2, batch_size, self.config.hidden_size
         else:
-            state_shape = 1*self.config.n_layers, batch_size, self.config.hidden_size
+            state_shape = 1, batch_size, self.config.hidden_size
         h0 = c0 = Variable(torch.zeros(state_shape))
         return (h0, c0)
 
     def forward(self, inputs, hidden, batch_size):
-        outputs, (ht, ct) = self.rnn(inputs, hidden)
+        if self.config.n_layers == 2:
+            outputs, (ht, ct) = self.rnn(inputs)
+            outputs, (ht, ct) = self.rnn2(outputs)
+        else:
+            outputs, (ht, ct) = self.rnn(inputs, hidden)
         return outputs
 
 

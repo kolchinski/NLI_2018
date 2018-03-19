@@ -8,7 +8,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
-from wrangle import DataManager
+from src.dataman.wrangle import DataManager
 
 logger = logging.getLogger(__name__)
 

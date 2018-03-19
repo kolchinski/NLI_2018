@@ -87,10 +87,23 @@ class DecomposableClassifierSentEmbed(nn.Module):
         encoder_pos_emb_input,
         encoder_unsort,
         encoder_init_hidden,
-        batch_size
+        batch_size,
+        sent_len,
     ):
-        sent_words_embed = self.encoder(sent = encoder_input) #batch_size x len x hidden_size
-        sent_embed = torch.sum(sent_words_embed,1) #batch_size x 1 x hidden_size
+        sent_words_embed = self.encoder(sent = encoder_input) #batch_size x len x hidden_sizeh
+
+        len = sent_words_embed.size(1)
+        mask = Variable(torch.ones(sent_words_embed.size()))
+        if self.config.cuda:
+            mask = mask.cuda()
+        for i, _ in enumerate(sent_len):  # skip the first sentence
+            l = sent_len[i]
+            if l < len:
+                mask[i, l:, :] = 0
+        sent_words_masked = sent_words_embed*mask
+
+        # sent_embed = torch.max(sent_words_masked,1)[0] #batch_size x 1 x hidden_size
+        sent_embed = torch.sum(sent_words_masked,1)
         sent_embed = torch.squeeze(sent_embed, 1) #batch_size x hidden_size
         return sent_embed
 

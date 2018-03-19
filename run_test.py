@@ -21,8 +21,8 @@ import models.load_embeddings as load_embeddings
 import constants
 
 args = dotdict({
-    'type': 'siamese',
-    'encoder_type': 'transformer',
+    'type': 'decomposable',
+    'encoder_type': 'decomposable',
     'lr': 0.01,
     'learning_rate_decay': 0.8,
     'max_length': 50,
@@ -31,7 +31,7 @@ args = dotdict({
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 512,
+    'hidden_size': 200,
     'embedding_size': 300,
     'n_layers': 1,
     'bidirectional': False,
@@ -99,7 +99,7 @@ if __name__ == "__main__":
                 batch_size=args.batch_size)
         elif args.encoder_type == 'decomposable':
             sent1, sent2, targets = \
-                dm.sample_dev_batch(use_cuda=args.cuda)
+                dm.get_next_test_batch(use_cuda=args.cuda)
         else:
             raise Exception('encoder_type not supported {}'.format(
                 args.encoder_type))

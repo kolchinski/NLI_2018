@@ -43,6 +43,8 @@ args = dotdict({
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 200,
+    'para_init': 0.01,
+    'intra_attn': True, # if we use intra_attention for decomposable model
     'n_layers': 1,
     'bidirectional': True,
     'embedding_size': 300,
@@ -101,7 +103,7 @@ if __name__ == "__main__":
                 config=args, embed=model.embed, encoder=model.encoder)
         elif args.type == 'decomposable':
             sent_model = decomposable_pytorch.DecomposableClassifierSentEmbed(
-                config=args, encoder=model.encoder)
+                config=args, embed=None, encoder=model.encoder)
 
         model.eval()
         sent_model.eval()
@@ -164,13 +166,23 @@ if __name__ == "__main__":
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
 
-        embeddings = model(
-            encoder_init_hidden=encoder_init_hidden,
-            encoder_input=sent_bin_tensor,
-            encoder_pos_emb_input=sent_posembinput,
-            encoder_unsort=sent_unsort,
-            batch_size=batch_size
-        ).data.cpu().numpy()
+        if args.encoder_type == 'decomposable':
+            embeddings = model(
+                encoder_init_hidden=encoder_init_hidden,
+                encoder_input=sent_bin_tensor,
+                encoder_pos_emb_input=sent_posembinput,
+                encoder_unsort=sent_unsort,
+                batch_size=batch_size,
+                sent_len=sent_len_tensor,
+            ).data.cpu().numpy()
+        else:
+            embeddings = model(
+                encoder_init_hidden=encoder_init_hidden,
+                encoder_input=sent_bin_tensor,
+                encoder_pos_emb_input=sent_posembinput,
+                encoder_unsort=sent_unsort,
+                batch_size=batch_size
+            ).data.cpu().numpy()
 
         return embeddings
 

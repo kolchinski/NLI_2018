@@ -201,6 +201,12 @@ class DataManager:
                 Variable(test_sent2s_pos_embedinput, volatile=True),
                 Variable(targets_tensor),
             )
+        elif self.config.encoder_type == 'decomposable':
+            return (
+                Variable(test_sent1s_num),
+                Variable(test_sent2s_num),
+                Variable(targets_tensor),
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=test_sent1s_num,

@@ -95,6 +95,7 @@ if __name__ == "__main__":
 
     for epoch in range(NumEpochs):
         nli_dm.shuffle_train_data()
+        squad_dm.shuffle_train_data()
 
         print('lr {}'.format(nli_state['lr']))
         nli_optimizer = optim.SGD(

@@ -49,6 +49,7 @@ class SiameseClassifierSentEmbed(nn.Module):
     def forward(
         self,
         encoder_input,
+        encoder_len,
         encoder_pos_emb_input,
         encoder_unsort,
         encoder_init_hidden,
@@ -61,18 +62,29 @@ class SiameseClassifierSentEmbed(nn.Module):
                 src_seq=encoder_input,
                 src_pos=encoder_pos_emb_input,
             )
-        else:
+        elif self.config.encoder_type == 'rnn':
             premise = self.encoder(
                 inputs=prem_embed,
                 hidden=encoder_init_hidden,
                 batch_size=batch_size
             )
-            premise = nn.utils.rnn.pad_packed_sequence(premise, padding_value=-np.infty)[0]
+            mask_value = -np.infty if self.config.sent_embed_type == 'maxpool' \
+                else 0
+            premise = nn.utils.rnn.pad_packed_sequence(
+                premise, padding_value=mask_value)[0]
             premise = premise.index_select(1, encoder_unsort)
 
-        premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]
+        if self.config.sent_embed_type == 'maxpool':
+            premise = torch.max(premise, 0)[0]  # [batch_size, embed_size]
 
-        return premise_maxpool
+        elif self.config.sent_embed_type == 'meanpool':
+            premise = torch.sum(premise, 0)
+            premise_sent_embed = torch.div(
+                torch.sum(premise, dim=0)[0],
+                encoder_len.data,
+            )
+
+        return premise_sent_embed
 
 
 class SiameseClassifier(nn.Module):

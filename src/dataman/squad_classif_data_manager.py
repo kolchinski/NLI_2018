@@ -184,14 +184,14 @@ class SquadDataManager(DataManager):
             numberize_sents_to_tensor(a1s)
         a2s_num, a2_bin_tensor, a2_len_tensor = self.\
             numberize_sents_to_tensor(a2s)
-        q1s_num, q1_bin_tensor, q1_len_tensor = self.\
+        qs_num, q_bin_tensor, q_len_tensor = self.\
             numberize_sents_to_tensor(qs)
         print('done.')
 
         return (
             a1_bin_tensor, a1_len_tensor,
             a2_bin_tensor, a2_len_tensor,
-            q1_bin_tensor, q1_len_tensor,
+            q_bin_tensor, q_len_tensor,
             targets, n_rows
         )
 

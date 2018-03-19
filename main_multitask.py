@@ -116,7 +116,7 @@ if __name__ == "__main__":
             model=squad_model,
             optimizer=squad_optimizer,
             epoch=epoch,
-            di=nli_dm,
+            di=squad_dm,
             args=squad_args,
             loss_criterion=squad_criterion,
         )
@@ -140,7 +140,7 @@ if __name__ == "__main__":
             _, squad_dev_acc = model_pipeline_pytorch.test_squad(
                 model=squad_model,
                 epoch=epoch,
-                di=nli_dm,
+                di=squad_dm,
                 args=squad_args,
                 loss_criterion=squad_criterion,
             )

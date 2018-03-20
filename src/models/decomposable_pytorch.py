@@ -75,6 +75,38 @@ class encoder(nn.Module):
         else:
             return sent_linear
 
+class DecomposableClassifierSentEmbed(nn.Module):
+    def __init__(self, config, embed, encoder):
+        super(DecomposableClassifierSentEmbed, self).__init__()
+        self.config = config
+        self.encoder = encoder
+
+    def forward(
+        self,
+        encoder_input,
+        encoder_len,
+        encoder_pos_emb_input,
+        encoder_unsort,
+        encoder_init_hidden,
+        batch_size,
+    ):
+        sent_words_embed = self.encoder(sent = encoder_input) #batch_size x len x hidden_sizeh
+
+        len = sent_words_embed.size(1)
+        mask = Variable(torch.ones(sent_words_embed.size()))
+        if self.config.cuda:
+            mask = mask.cuda()
+        for i, _ in enumerate(encoder_len.data):  # skip the first sentence
+            l = encoder_len.data[i]
+            if l < len:
+                mask[i, l:, :] = 0
+        sent_words_masked = sent_words_embed*mask
+
+        # sent_embed = torch.max(sent_words_masked,1)[0] #batch_size x 1 x hidden_size
+        sent_embed = torch.sum(sent_words_masked,1)
+        sent_embed = torch.squeeze(sent_embed, 1) #batch_size x hidden_size
+        return sent_embed
+
 class SNLIClassifier(nn.Module):
     '''
         intra sentence attention

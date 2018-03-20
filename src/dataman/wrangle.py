@@ -336,7 +336,7 @@ class DataManager:
 
         return sents_num, bin_tensor, slen_tensor
 
-    def add_glove_to_vocab(self, path):
+    def add_glove_to_vocab(self, path, d_embed):
         name = 'glove.6B.' + str(d_embed) + 'd.txt'
         name_pt = name + '.pt'
         path_pt = os.path.join(path, name_pt)

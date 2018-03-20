@@ -83,23 +83,27 @@ if __name__ == "__main__":
         print('found checkpoint dir {}'.format(checkpoint))
 
         dm = wrangle.DataManager(args)
-        dm.add_glove_to_vocab(constants.EMBED_DATA_PATH)
         args.n_embed = dm.vocab.n_words
         if args.type == 'siamese':
             model = siamese_pytorch.SiameseClassifier(config=args)
+        elif args.type == 'decomposable':
+            model = decomposable_pytorch.SNLIClassifier(config=args)
+        else:
+            model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
+        dm.add_glove_to_vocab(constants.EMBED_DATA_PATH, args.embedding_size)
+
+        if args.type == 'siamese':
             model.embed.weight.data = load_embeddings.load_embeddings(
                 dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
         elif args.type == 'decomposable':
-            model = decomposable_pytorch.SNLIClassifier(config=args)
             model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
                 dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
         else:
-            model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
             model.encoder.embedding.weight.data = load_embeddings.\
                 load_embeddings(
                     dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-
-        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
 
         if args.type == 'siamese':
             sent_model = siamese_pytorch.SiameseClassifierSentEmbed(

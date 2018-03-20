@@ -130,7 +130,7 @@ if __name__ == "__main__":
             loss_criterion=nli_criterion,
         )
 
-        if epoch % TrainEpochsPerTest == 0 and epoch:
+        if epoch % TrainEpochsPerTest == 0:
             _, nli_dev_acc = model_pipeline_pytorch.test(
                 model=nli_model,
                 epoch=epoch,

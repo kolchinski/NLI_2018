@@ -24,9 +24,6 @@ import src.constants as constants
 
 import sys
 import logging
-import time
-from pytorch_classification.utils import (
-    Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig)
 
 
 args = dotdict({
@@ -119,7 +116,7 @@ if __name__ == "__main__":
         # numberize
         sent_num, sent_bin_tensor, sent_len_tensor = dm.\
             numberize_sents_to_tensor(sents)
-        
+
         # prepare input data
         if config.encoder_type == 'transformer':
             sent_len_tensor = Variable(sent_len_tensor)
@@ -128,12 +125,13 @@ if __name__ == "__main__":
             sent_unsort = None
             encoder_init_hidden = None
         elif config.encoder_type == 'rnn':
-            sent_bin_tensor, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
-                seq_tensor=sent_bin_tensor,
-                seq_lengths=sent_len_tensor.data,
-                embed=model.embed,
-                use_cuda=config.cuda,
-            )
+            sent_bin_tensor, sent_unsort = dm.vocab.\
+                get_packedseq_from_sent_batch(
+                    seq_tensor=sent_bin_tensor,
+                    seq_lengths=sent_len_tensor,
+                    embed=model.embed,
+                    use_cuda=config.cuda,
+                )
             sent_posembinput = None
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=batch_size)
@@ -146,7 +144,8 @@ if __name__ == "__main__":
             if config.encoder_type == 'rnn':
                 sent_len_tensor = sent_len_tensor.cuda()
                 if len(encoder_init_hidden):
-                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                    encoder_init_hidden = [
+                        x.cuda() for x in encoder_init_hidden]
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
 
@@ -162,7 +161,7 @@ if __name__ == "__main__":
         return embeddings
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
-    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC', 'MRPC',
+    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',
                       'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
     results = se.eval(transfer_tasks)
     print(results)

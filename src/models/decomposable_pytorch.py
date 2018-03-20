@@ -100,12 +100,27 @@ class DecomposableClassifierSentEmbed(nn.Module):
         for i, _ in enumerate(encoder_len.data):
             l = encoder_len.data[i]
             if l < len:
-                mask[l:, i, :] = 1
+                mask[i, l:, :] = 1
         sent_words_embed[mask] = 0
 
+        if self.config.sent_embed_type == 'maxpool':
+            sent_embed = torch.max(sent_words_embed, 1)[0]  # #batch_size x hidden_size
+        elif self.config.sent_embed_type == 'meanpool':
+            sent_embed = torch.div(
+                torch.sum(sent_words_embed, 1),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
+            )
+        elif self.config.sent_embed_type == 'mix':
+            sent_max = torch.max(sent_words_embed, 1)[0]  # #batch_size x hidden_size
+            sent_mean = torch.div(
+                torch.sum(sent_words_embed, 1),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
+            )
+            sent_embed = torch.cat([sent_max,sent_mean],1)
+
         # sent_embed = torch.max(sent_words_masked,1)[0] #batch_size x 1 x hidden_size
-        sent_embed = torch.sum(sent_words_embed,1)
-        sent_embed = torch.squeeze(sent_embed, 1) #batch_size x hidden_size
+        # sent_embed = torch.sum(sent_words_embed,1)
+        # sent_embed = torch.squeeze(sent_embed, 1) #batch_size x hidden_size
         return sent_embed
 
 class SNLIClassifier(nn.Module):

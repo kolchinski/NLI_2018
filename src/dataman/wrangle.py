@@ -235,7 +235,7 @@ class DataManager:
             for j, _ in enumerate(sent):
                 if j < self.config.max_length:
                     pos_embedinput_arr[i, j] = j + 1
-        print(pos_embedinput_arr.shape)
+        #print(pos_embedinput_arr.shape)
         pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
         return pos_embedinput_tensor
 

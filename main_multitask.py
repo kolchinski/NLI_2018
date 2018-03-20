@@ -154,10 +154,10 @@ if __name__ == "__main__":
             model_pipeline_pytorch.save_checkpoint(
                 nli_state={
                     'epoch': epoch + 1,
-                    'nli_state_dict': nli_model.nli_state_dict(),
+                    'nli_state_dict': nli_model.state_dict(),
                     'acc': nli_dev_acc,
                     'best_acc': best_nli_dev_acc,
-                    'optimizer': nli_optimizer.nli_state_dict()
+                    'optimizer': nli_optimizer.state_dict()
                 }, is_best=True)
 
         nli_state['lr'] *= nli_args.learning_rate_decay

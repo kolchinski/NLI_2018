@@ -152,7 +152,7 @@ if __name__ == "__main__":
                 best_nli_dev_acc = nli_dev_acc
             print('Saving to checkpoint')
             model_pipeline_pytorch.save_checkpoint(
-                nli_state={
+                state={
                     'epoch': epoch + 1,
                     'state_dict': nli_model.state_dict(),
                     'acc': nli_dev_acc,

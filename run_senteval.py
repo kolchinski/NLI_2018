@@ -119,10 +119,10 @@ if __name__ == "__main__":
         # numberize
         sent_num, sent_bin_tensor, sent_len_tensor = dm.\
             numberize_sents_to_tensor(sents)
-        sent_len_tensor = Variable(sent_len_tensor)
-
+        
         # prepare input data
         if config.encoder_type == 'transformer':
+            sent_len_tensor = Variable(sent_len_tensor)
             sent_bin_tensor = Variable(sent_bin_tensor)
             sent_posembinput = Variable(dm.get_pos_embedinputinput(sent_num))
             sent_unsort = None

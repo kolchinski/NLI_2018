@@ -53,6 +53,28 @@ args = dotdict({
 })
 state = {k: v for k, v in args.items()}
 
+squad_args = dotdict({
+    'type': 'siamese',
+    'encoder_type': 'rnn',
+    'lr': 0.05,
+    'learning_rate_decay': 0.99,
+    'max_length': 50,
+    'batch_size': 128,
+    'batches_per_epoch': 500,
+    'test_batches_per_epoch': 500,
+    'input_size': 300,
+    'hidden_size': 2048,
+    'n_layers': 1,
+    'bidirectional': False,
+    'embedding_size': 300,
+    'fix_emb': True,
+    'dp_ratio': 0.3,
+    'd_out': 2,  # 2 classes
+    'mlp_classif_hidden_size_list': [512, 512],
+    'cuda': torch.cuda.is_available(),
+})
+squad_state = {k: v for k, v in squad_args.items()}
+
 # define senteval params
 params_senteval = {
     'task_path': './SentEval/data/senteval_data',

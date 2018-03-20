@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
         dm = wrangle.DataManager(args)
         if args.add_squad:  # add squad to vocab to match checkpoint
-            _ = SquadDataManager(squad_args, vocab=nli_dm.vocab)
+            squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
         args.n_embed = dm.vocab.n_words
 
         if True:

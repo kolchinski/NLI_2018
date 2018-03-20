@@ -31,8 +31,8 @@ args = dotdict({
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
     'type': 'siamese',
-    'sent_embed_type': 'mix',
     'encoder_type': 'rnn',
+    'sent_embed_type': 'maxpool',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
@@ -45,15 +45,15 @@ args = dotdict({
     #'hidden_size': 200, #For decomposable model
     'para_init': 0.01,
     'intra_attn': True, # if we use intra_attention for decomposable model
-    'hidden_size': 1024,
+    'hidden_size': 2048, #1024 if n_layer=2
     'layer1_hidden_size': 1024,
-    'n_layers': 2,
+    'n_layers': 1,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
-    'mlp_classif_hidden_size_list': [512, 512],
+    'mlp_classif_hidden_size_list': [512],
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -83,6 +83,7 @@ if __name__ == "__main__":
         print('found checkpoint dir {}'.format(checkpoint))
 
         dm = wrangle.DataManager(args)
+        dm.add_glove_to_vocab(constants.EMBED_DATA_PATH)
         args.n_embed = dm.vocab.n_words
         if args.type == 'siamese':
             model = siamese_pytorch.SiameseClassifier(config=args)
@@ -159,6 +160,7 @@ if __name__ == "__main__":
         else:
             raise Exception('encoder_type not supported {}'.format(
                 args.encoder_type))
+
         if config.cuda:
             model = model.cuda()
             if config.encoder_type == 'transformer':
@@ -174,7 +176,6 @@ if __name__ == "__main__":
                     encoder_init_hidden = encoder_init_hidden.cuda()
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
-
 
         embeddings = model(
             encoder_init_hidden=encoder_init_hidden,

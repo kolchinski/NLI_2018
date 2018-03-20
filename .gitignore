@@ -9,5 +9,6 @@ static/glove/*
 *.pyc
 *DS_Store*
 static/glove
+static/squad
 checkpoint/*
 checkpoint*

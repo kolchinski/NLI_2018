@@ -25,30 +25,29 @@ import src.constants as constants
 
 import sys
 import logging
-import time
-from pytorch_classification.utils import (
-    Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig)
 
 
 args = dotdict({
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
-    #'type': 'siamese',
-    'sent_embed_type': 'meanpool',
+    'type': 'siamese',
+    'sent_embed_type': 'mix',
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
     'batch_size': 128,
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 200,
+    #'hidden_size': 200, #For decomposable model
     'para_init': 0.01,
     'intra_attn': True, # if we use intra_attention for decomposable model
-    'n_layers': 1,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
+    'n_layers': 2,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
@@ -132,26 +131,28 @@ if __name__ == "__main__":
         sent_num, sent_bin_tensor, sent_len_tensor = dm.\
             numberize_sents_to_tensor(sents)
 
-        sent_len_tensor = Variable(sent_len_tensor)
-
         # prepare input data
         if config.encoder_type == 'transformer':
+            sent_len_tensor = Variable(sent_len_tensor)
             sent_bin_tensor = Variable(sent_bin_tensor)
             sent_posembinput = Variable(dm.get_pos_embedinputinput(sent_num))
             sent_unsort = None
             encoder_init_hidden = None
         elif config.encoder_type == 'rnn':
-            sent_bin_tensor, sent_unsort = dm.vocab.get_packedseq_from_sent_batch(
-                seq_tensor=sent_bin_tensor,
-                seq_lengths=sent_len_tensor,
-                embed=model.embed,
-                use_cuda=config.cuda,
-            )
+            sent_bin_tensor, sent_unsort = dm.vocab.\
+                get_packedseq_from_sent_batch(
+                    seq_tensor=sent_bin_tensor,
+                    seq_lengths=sent_len_tensor,
+                    embed=model.embed,
+                    use_cuda=config.cuda,
+                )
             sent_posembinput = None
+            sent_len_tensor = Variable(sent_len_tensor)
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=batch_size)
         elif args.encoder_type == 'decomposable':
             sent_bin_tensor = Variable(sent_bin_tensor)
+            sent_len_tensor = Variable(sent_len_tensor)
             sent_posembinput = None
             sent_unsort = None
             encoder_init_hidden = None
@@ -162,10 +163,13 @@ if __name__ == "__main__":
             model = model.cuda()
             if config.encoder_type == 'transformer':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
                 sent_posembinput = sent_posembinput.cuda()
             if config.encoder_type == 'rnn':
+                sent_len_tensor = sent_len_tensor.cuda()
                 if len(encoder_init_hidden):
-                    encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
+                    encoder_init_hidden = [
+                        x.cuda() for x in encoder_init_hidden]
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
             if args.encoder_type == 'decomposable':
@@ -184,7 +188,7 @@ if __name__ == "__main__":
         return embeddings
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
-    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC', 'MRPC',
+    transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',
                       'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
     results = se.eval(transfer_tasks)
     print(results)

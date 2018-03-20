@@ -32,7 +32,7 @@ class SquadDataManager(DataManager):
         (
             self.dev_a1s, self.dev_a1s_len,
             self.dev_a2s, self.dev_a2s_len,
-            self.dev_qs, self.dev_q2s_len,
+            self.dev_qs, self.dev_qs_len,
             self.dev_ys, self.dev_size
         ) = self.load_tok_data(constants.SQUAD_DEV_DATA_PATH)
         self.curr_batch_train = 0

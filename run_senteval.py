@@ -133,6 +133,7 @@ if __name__ == "__main__":
                     use_cuda=config.cuda,
                 )
             sent_posembinput = None
+            sent_len_tensor = Variable(sent_len_tensor)
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=batch_size)
         if config.cuda:

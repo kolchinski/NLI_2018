@@ -21,7 +21,7 @@ import constants
 logger = logging.getLogger(__name__)
 
 NumEpochs = 10000
-TrainEpochsPerTest = 500
+TrainEpochsPerTest = 4
 nli_args = dotdict({
     'type': 'siamese',
     'encoder_type': 'rnn',
@@ -29,7 +29,7 @@ nli_args = dotdict({
     'learning_rate_decay': 0.99,
     'max_length': 50,
     'batch_size': 64,
-    'batches_per_epoch': 3000,
+    'batches_per_epoch': 1000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 2048,
@@ -51,7 +51,7 @@ squad_args = dotdict({
     'learning_rate_decay': 0.99,
     'max_length': 50,
     'batch_size': 128,
-    'batches_per_epoch': 3000,
+    'batches_per_epoch': 500,
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 2048,

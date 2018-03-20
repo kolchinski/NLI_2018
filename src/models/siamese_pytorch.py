@@ -89,24 +89,25 @@ class SiameseClassifierSentEmbed(nn.Module):
             premise = premise.index_select(1, encoder_unsort)
 
         len = premise.size(0)
-        mask = Variable(torch.ones(premise.size()))
+        mask = Variable(torch.zeros(premise.size()))
+        mask = mask.byte()
         if self.config.cuda:
             mask = mask.cuda()
         for i, _ in enumerate(encoder_len.data):
             l = encoder_len.data[i]
             if l < len:
-                mask[l:, i, :] = 0
-        premise = premise*mask
+                mask[l:, i, :] = 1
+        premise[mask] = 0
 
         if self.config.sent_embed_type == 'maxpool':
-            premise_sent_embed = torch.max(premise, 0)[0]  # [batch_size, embed_size]
+            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
         elif self.config.sent_embed_type == 'meanpool':
             premise_sent_embed = torch.div(
                 torch.sum(premise, dim=0),
                 Variable(encoder_len.data.unsqueeze(1)).float(),
             )
         elif self.config.sent_embed_type == 'mix':
-            premise_max = torch.max(premise, 0)[0]
+            premise_max = torch.max(premise, dim=0)[0]
             premise_mean = torch.div(
                 torch.sum(premise, dim=0),
                 Variable(encoder_len.data.unsqueeze(1)).float(),

@@ -28,19 +28,20 @@ import logging
 
 args = dotdict({
     'type': 'siamese',
-    'sent_embed_type': 'meanpool',
+    'sent_embed_type': 'mix',
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
     'batch_size': 128,
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
-    'n_layers': 1,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
+    'n_layers': 2,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
@@ -132,14 +133,17 @@ if __name__ == "__main__":
                     use_cuda=config.cuda,
                 )
             sent_posembinput = None
+            sent_len_tensor = Variable(sent_len_tensor)
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=batch_size)
         if config.cuda:
             model = model.cuda()
             if config.encoder_type == 'transformer':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
                 sent_posembinput = sent_posembinput.cuda()
             if config.encoder_type == 'rnn':
+                sent_len_tensor = sent_len_tensor.cuda()
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [
                         x.cuda() for x in encoder_init_hidden]

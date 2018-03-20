@@ -22,7 +22,7 @@ import constants
 
 args = dotdict({
     'type': 'siamese',
-    'encoder_type': 'transformer',
+    'encoder_type': 'rnn',
     'lr': 0.01,
     'learning_rate_decay': 0.8,
     'max_length': 50,
@@ -31,10 +31,11 @@ args = dotdict({
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 512,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
     'embedding_size': 300,
-    'n_layers': 1,
-    'bidirectional': False,
+    'n_layers': 2,
+    'bidirectional': True,
     'fix_emb': True,
     'd_proj': None,
     'dp_ratio': 0.7,

@@ -31,7 +31,7 @@ from pytorch_classification.utils import (
 
 args = dotdict({
     'type': 'siamese',
-    'sent_embed_type': 'meanpool',
+    'sent_embed_type': 'mix',
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,

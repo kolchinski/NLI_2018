@@ -8,7 +8,7 @@ import numpy as np
 
 import torch
 from torch.autograd import Variable
-from wrangle import DataManager
+from src.dataman.wrangle import DataManager
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class SquadDataManager(DataManager):
         (
             self.train_a1s, self.train_a1s_len,
             self.train_a2s, self.train_a2s_len,
-            self.train_qs, self.train_q2s_len,
+            self.train_qs, self.train_qs_len,
             self.train_ys, self.train_size
         ) = self.load_tok_data(
             constants.SQUAD_FULL_TRAIN_DATA_PATH, train=True)
@@ -48,7 +48,7 @@ class SquadDataManager(DataManager):
         self.train_a2s = self.train_a2s.index_select(0, permutation)
         self.train_a2s_len = self.train_a2s_len.index_select(0, permutation)
         self.train_qs = self.train_qs.index_select(0, permutation)
-        self.train_q2s_len = self.train_q2s_len.index_select(0, permutation)
+        self.train_qs_len = self.train_qs_len.index_select(0, permutation)
         self.train_ys = self.train_ys[permutation]
 
         self.curr_batch_train = 0

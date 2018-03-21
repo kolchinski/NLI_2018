@@ -98,9 +98,8 @@ class SiameseClassifierSentEmbed(nn.Module):
             if l < len:
                 mask[l:, i, :] = 1
         premise[mask] = 0
-
         if self.config.sent_embed_type == 'maxpool':
-            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
+            premise_sent_embed = torch.max(premise, 0)[0]  # [batch_size, embed_size]
         elif self.config.sent_embed_type == 'meanpool':
             premise_sent_embed = torch.div(
                 torch.sum(premise, dim=0),

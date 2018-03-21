@@ -4,6 +4,7 @@ sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
+from src.dataman.squad_classif_data_manager import SquadDataManager
 from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.siamese_pytorch as siamese_pytorch

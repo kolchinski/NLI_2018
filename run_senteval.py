@@ -31,8 +31,8 @@ args = dotdict({
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
     'type': 'siamese',
-    'encoder_type': 'rnn',
-    'sent_embed_type': 'maxpool',
+    'encoder_type': 'transformer',
+    'sent_embed_type': 'mix',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
@@ -45,10 +45,10 @@ args = dotdict({
     #'hidden_size': 200, #For decomposable model
     'para_init': 0.01,
     'intra_attn': True, # if we use intra_attention for decomposable model
-    'hidden_size': 2048, #1024 if n_layer=2
+    'hidden_size': 512, #1024 if n_layer=2
     'layer1_hidden_size': 1024,
     'n_layers': 1,
-    'bidirectional': True,
+    'bidirectional': False,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.0,
@@ -180,6 +180,7 @@ if __name__ == "__main__":
                     encoder_init_hidden = encoder_init_hidden.cuda()
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
 
         embeddings = model(
             encoder_init_hidden=encoder_init_hidden,
@@ -194,6 +195,6 @@ if __name__ == "__main__":
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
     transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',
-                      'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
+                      'SICKEntailment', 'SICKRelatedness', 'STS14']
     results = se.eval(transfer_tasks)
     print(results)

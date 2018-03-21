@@ -110,6 +110,8 @@ class DecomposableClassifierSentEmbed(nn.Module):
                 torch.sum(sent_words_embed, 1),
                 Variable(encoder_len.data.unsqueeze(1)).float(),
             )
+        elif self.config.sent_embed_type == 'sum':
+            sent_embed = torch.sum(sent_words_embed, dim=1)
         elif self.config.sent_embed_type == 'mix':
             sent_max = torch.max(sent_words_embed, 1)[0]  # #batch_size x hidden_size
             sent_mean = torch.div(

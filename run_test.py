@@ -81,15 +81,6 @@ if __name__ == "__main__":
     if args.add_squad:  # add squad to vocab to match checkpoint
         squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
     args.n_embed = dm.vocab.n_words
-    if args.add_squad:
-        nli_model = siamese_pytorch.SiameseClassifier(config=args)
-        nli_model.embed.weight.data = load_embeddings.load_embeddings(
-            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        model = squad_pytorch.SquadClassifier(
-            config=squad_args,
-            embed=nli_model.embed,
-            encoder=nli_model.encoder,
-        )
     elif args.type == 'siamese':
         model = siamese_pytorch.SiameseClassifier(config=args)
         model.embed.weight.data = load_embeddings.load_embeddings(

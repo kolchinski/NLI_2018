@@ -131,6 +131,10 @@ if __name__ == "__main__":
         params['config'] = args
         params['dm'] = dm
         params['sent_model'] = sent_model
+        params['classifier'].update({
+            'sent_model': sent_model,
+            'config': args,
+        })
 
     def batcher(params, batch):
         ''' input batch is list of sentences (list of words/tokenized)'''

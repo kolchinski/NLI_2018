@@ -37,8 +37,7 @@ class SelfAttentionModel(nn.Module):
         )
 
     def forward(self, encoder_outputs):
-        encoder_out_batchfirst = encoder_outputs.permute(1, 0, 2)
-        encoder_out_tr = encoder_outputs.permute(2, 0, 1)  # [bs, nunits, slen]
+        encoder_out_tr = encoder_outputs.permute(0, 2, 1)  # [bs, nunits, slen]
 
         pre_softmax = torch.matmul(
             self.s2w2_selfattn,
@@ -47,7 +46,7 @@ class SelfAttentionModel(nn.Module):
         A_selfattn = torch.Softmax(pre_softmax, dim=1)
 
         # [bs, attn_outer_size, num_units]
-        encoder_outputs_attn = torch.matmul(A_selfattn, encoder_out_batchfirst)
+        encoder_outputs_attn = torch.matmul(A_selfattn, encoder_outputs)
 
         # [bs, attn_outer_size * num_units]
         return encoder_outputs_attn.view(-1, self.num_out_units)

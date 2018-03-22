@@ -71,7 +71,7 @@ class SiameseClassifierSentEmbed(nn.Module):
             mask_value = -np.infty if \
                 self.config.sent_embed_type == 'maxpool' else 0
             premise = nn.utils.rnn.pad_packed_sequence(
-                premise, padding_value=mask_value)[0]  # [nunits, bs, seq_len]
+                premise, padding_value=mask_value)[0]  # [seq_len, bs, nunits]
             premise = premise.index_select(1, encoder_unsort)
 
         if self.config.sent_embed_type == 'maxpool':
@@ -84,7 +84,7 @@ class SiameseClassifierSentEmbed(nn.Module):
                 encoder_len.data,
             )
         elif self.config.sent_embed_type == 'selfattention':
-            premise = premise.permute(1, 2, 0)  # [bsize, seq_len, d_model]
+            premise = premise.permute(1, 0, 2)  # [bsize, seq_len, d_model]
             return premise, encoder_len
 
         return premise_sent_embed, encoder_len

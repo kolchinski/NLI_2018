@@ -90,6 +90,19 @@ if __name__ == "__main__":
     best_nli_dev_acc = 0
     best_nli_train_acc = -np.infty
 
+    # load trained model from checkpoint
+    if len(sys.argv) > 1:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        model_pipeline_pytorch.load_checkpoint(nli_model, checkpoint=checkpoint_dir)
+        nli_state['lr'] = 0.01
+        print('resetting lr as {}'.format(nli_state['lr']))
+        squad_model = squad_pytorch.SquadClassifier(
+            config=squad_args,
+            embed=nli_model.embed,
+            encoder=nli_model.encoder,
+        )
+
     nli_criterion = nn.NLLLoss()
     squad_criterion = nn.NLLLoss()
 

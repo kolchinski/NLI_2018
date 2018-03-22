@@ -29,13 +29,12 @@ class SelfAttentionModel(nn.Module):
         w1_selfattn = w1_selfattn.cuda()
         w2_selfattn = torch.FloatTensor(
             config.self_attn_outer_size, config.self_attn_inner_size
-        ).normal_(0, 0.1),
+        ).normal_(0, 0.1)
         w2_selfattn = w2_selfattn.cuda()
         self.w1_selfattn = nn.Parameter(
             w1_selfattn, requires_grad=True)
         self.w2_selfattn = nn.Parameter(
-            w2_selfattn, requires_grad=True,
-        )
+            w2_selfattn, requires_grad=True)
         self.tanh = torch.nn.Tanh()
         self.softmax = torch.nn.Softmax(dim=1)
 

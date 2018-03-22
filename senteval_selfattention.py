@@ -15,11 +15,9 @@ A = softmax(W2 tanh(W1 H^T))
 
 class SelfAttentionModel(nn.Module):
 
-    def __init__(self, config, embed, encoder):
+    def __init__(self, config):
         super(SelfAttentionModel, self).__init__()
         self.config = config
-        self.embed = embed
-        self.encoder = encoder
 
         self.num_units = self.config.hidden_size
         self.num_out_units = self.num_units * config.self_attn_outer_size

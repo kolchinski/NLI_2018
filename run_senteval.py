@@ -32,7 +32,7 @@ args = dotdict({
     'type': 'siamese',
     'self_attn_inner_size': 128,
     'self_attn_outer_size': 8,
-    'sent_embed_type': 'meanpool',
+    'sent_embed_type': 'selfattention',
     'encoder_type': 'rnn',
     'lr': 0.05,
     'use_dot_attention': True,
@@ -51,7 +51,7 @@ args = dotdict({
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
-    'cuda': False #torch.cuda.is_available(),
+    'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
 
-        embeddings = model(
+        embeddings, encoder_len = model(
             encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent_bin_tensor,
             encoder_len=sent_len_tensor,

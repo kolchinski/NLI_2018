@@ -38,7 +38,7 @@ class SelfAttentionModel(nn.Module):
             requires_grad=True,
         )
 
-    def forward(self, encoder_outputs, batch_len):
+    def forward(self, encoder_outputs):
         encoder_out_batchfirst = encoder_outputs.permute(1, 0, 2)
         encoder_out_tr = encoder_outputs.permute(2, 0, 1)  # [bs, nunits, slen]
 

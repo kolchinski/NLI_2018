@@ -31,7 +31,7 @@ args = dotdict({
     'add_squad': True,
     'type': 'siamese',
     'self_attn_inner_size': 128,
-    'self_attn_outer_size':8,
+    'self_attn_outer_size': 8,
     'sent_embed_type': 'meanpool',
     'encoder_type': 'rnn',
     'lr': 0.05,
@@ -51,7 +51,7 @@ args = dotdict({
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
-    'cuda': torch.cuda.is_available(),
+    'cuda': False #torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
 
@@ -84,7 +84,8 @@ params_senteval = {
     'kfold': 5,
 }
 params_senteval['classifier'] = {
-    'nhid': 0,
+    'use_selfattention': True,
+    'nhid': 40,
     'optim': 'adam',
     'batch_size': 64,
     'tenacity': 5,

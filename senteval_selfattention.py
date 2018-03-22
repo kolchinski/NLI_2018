@@ -36,7 +36,7 @@ class SelfAttentionModel(nn.Module):
             requires_grad=True,
         )
         self.tanh = torch.nn.Tanh()
-        self.softmax = torch.Softmax()
+        self.softmax = torch.nn.Softmax()
 
     def forward(self, encoder_outputs):
         encoder_out_tr = encoder_outputs.permute(0, 2, 1)  # [bs, nunits, slen]

@@ -197,8 +197,7 @@ if __name__ == "__main__":
                batch_size,
                config.max_length - embeddings_np.shape[1],
                embeddings_np.shape[2],
-               )
-            )
+            ))
             embeddings_np = np.concatenate(
                 [embeddings_np, extra_zeros], axis=1)
 

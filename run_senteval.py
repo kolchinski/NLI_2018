@@ -188,8 +188,19 @@ if __name__ == "__main__":
             encoder_unsort=sent_unsort,
             batch_size=batch_size
         )
+        embeddings_np = embeddings.data.cpu().numpy()
+        # add zeros to max len
+        if config.sent_embed_type == 'selfattention':
+            extra_zeros = np.zeros(shape=(
+               batch_size,
+               config.max_len - embeddings_np.shape[1],
+               embeddings_np.shape[2],
+               )
+            )
+            embeddings_np = np.concatenate(
+                [embeddings_np, extra_zeros], axis=1)
 
-        return embeddings.data.cpu().numpy()
+        return embeddings_np
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
     transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',

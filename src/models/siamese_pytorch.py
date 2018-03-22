@@ -84,6 +84,7 @@ class SiameseClassifierSentEmbed(nn.Module):
                 encoder_len.data,
             )
         elif self.config.sent_embed_type == 'selfattention':
+            premise = premise.permute(1, 2, 0)  # [bsize, seq_len, nunits]
             return premise, encoder_len
 
         return premise_sent_embed, encoder_len

@@ -7,6 +7,7 @@ import dataman.wrangle as wrangle
 from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.siamese_pytorch as siamese_pytorch
+import models.decomposable_pytorch as decomposable_pytorch
 from utils import dotdict
 import torch
 import torch.optim as optim
@@ -20,25 +21,31 @@ import models.load_embeddings as load_embeddings
 import constants
 
 args = dotdict({
+    #'type': 'decomposable',
+    #'encoder_type': 'decomposable',
     'type': 'siamese',
     'encoder_type': 'rnn',
-    'lr': 0.05,
-    'use_dot_attention': True,
-    'learning_rate_decay': 0.9,
-    'max_length': 100,
-    'epochs': 10,
-    'batch_size': 64,
-    'batches_per_epoch': 3000,
+    'lr': 0.01,
+    'learning_rate_decay': 0.8,
+    'max_length': 50,
+    'epochs': 20,
+    'batch_size': 128,
+    'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
-    'n_layers': 1,
-    'bidirectional': False,
+    #'hidden_size': 200,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
     'embedding_size': 300,
+    'n_layers': 2,
+    'bidirectional': True,
     'fix_emb': True,
-    'dp_ratio': 0.0,
+    'd_proj': None,
+    'dp_ratio': 0.7,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
+    'para_init': 0.01, # parameter init Gaussian variance,
+    'intra_attn': True, # if we use intra_attention for decomposable model
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -51,9 +58,13 @@ if __name__ == "__main__":
 
     dm = wrangle.DataManager(args)
     args.n_embed = dm.vocab.n_words
-    if True:
+    if args.type == 'siamese':
         model = siamese_pytorch.SiameseClassifier(config=args)
         model.embed.weight.data = load_embeddings.load_embeddings(
+            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    elif args.type == 'decomposable':
+        model = decomposable_pytorch.SNLIClassifier(config=args)
+        model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
             dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
     else:
         model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
@@ -90,6 +101,9 @@ if __name__ == "__main__":
             sent1_posembinput, sent2_posembinput = None, None
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=args.batch_size)
+        elif args.encoder_type == 'decomposable':
+            sent1, sent2, targets = \
+                dm.get_next_test_batch(use_cuda=args.cuda)
         else:
             raise Exception('encoder_type not supported {}'.format(
                 args.encoder_type))
@@ -101,6 +115,9 @@ if __name__ == "__main__":
                 sent2 = sent2.cuda()
                 sent1_posembinput = sent1_posembinput.cuda()
                 sent2_posembinput = sent2_posembinput.cuda()
+            elif args.encoder_type == 'decomposable':
+                sent1 = sent1.cuda()
+                sent2 = sent2.cuda()
             if args.encoder_type == 'rnn':
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [x.cuda() for x in encoder_init_hidden]
@@ -111,16 +128,22 @@ if __name__ == "__main__":
         data_time.update(time.time() - end)
 
         # compute output
-        softmax_outputs = model(
-            encoder_init_hidden=encoder_init_hidden,
-            encoder_input=sent1,
-            encoder_pos_emb_input=sent1_posembinput,
-            encoder_unsort=unsort1,
-            decoder_input=sent2,
-            decoder_pos_emb_input=sent2_posembinput,
-            decoder_unsort=unsort2,
-            batch_size=args.batch_size,
-        )
+        if args.encoder_type == 'decomposable':
+            softmax_outputs = model(
+                sent1=sent1,
+                sent2=sent2,
+            )
+        else:
+            softmax_outputs = model(
+                encoder_init_hidden=encoder_init_hidden,
+                encoder_input=sent1,
+                encoder_pos_emb_input=sent1_posembinput,
+                encoder_unsort=unsort1,
+                decoder_input=sent2,
+                decoder_pos_emb_input=sent2_posembinput,
+                decoder_unsort=unsort2,
+                batch_size=args.batch_size,
+            )
 
         # measure accuracy and record loss
         acc_batch = model_pipeline_pytorch.compute_accuracy(

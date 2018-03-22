@@ -24,18 +24,19 @@ args = dotdict({
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.8,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
     'batch_size': 64,
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
-    'n_layers': 1,
-    'bidirectional': False,
+    'hidden_size': 1024,
+    'layer1_hidden_size': 1024,
+    'n_layers': 2,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.3,
     'd_out': 3,  # 3 classes
     'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
@@ -60,6 +61,14 @@ if __name__ == "__main__":
 
     best_dev_acc = 0
     best_train_acc = -np.infty
+
+    # load trained model from checkpoint
+    if len(sys.argv) > 1:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint_dir)
+        state['lr'] = 0.01
+        print('resetting lr as {}'.format(state['lr']))
 
     criterion = nn.NLLLoss()
 

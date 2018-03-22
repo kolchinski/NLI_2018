@@ -11,3 +11,7 @@ FULL_TRAIN_TOK_DATA_PATH  = os.path.join(DATA_DIR, 'train.')
 DEV_TOK_DATA_PATH  = os.path.join(DATA_DIR, 'dev.')
 TEST_TOK_DATA_PATH  = os.path.join(DATA_DIR, 'test.')
 EMBED_DATA_PATH = os.path.join(ROOT_PATH, 'static/glove')
+
+SQUAD_DIR = os.path.join(ROOT_PATH, 'static/squad')
+SQUAD_FULL_TRAIN_DATA_PATH = os.path.join(SQUAD_DIR, 'train_squad_classif.txt')
+SQUAD_DEV_DATA_PATH = os.path.join(SQUAD_DIR, 'dev_squad_classif.txt')

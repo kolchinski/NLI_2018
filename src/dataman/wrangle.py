@@ -1,12 +1,19 @@
-import constants
+import sys
+sys.path.append('../')
+import src.constants as constants
+import src.models.vocab_pytorch as vocab_pytorch
+
 import json
 import logging
 import numpy as np
-import sys
-sys.path.append('../')
+
 import torch
 from torch.autograd import Variable
-import models.vocab_pytorch as vocab_pytorch
+
+import io
+import os
+import array
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +96,12 @@ class DataManager:
                 Variable(train_sent2s_pos_embedinput),
                 Variable(targets_tensor),
             )
+        elif self.config.encoder_type == 'decomposable':
+            return (
+                Variable(train_sent1s_num),
+                Variable(train_sent2s_num),
+                Variable(targets_tensor),
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=train_sent1s_num,
@@ -136,6 +149,12 @@ class DataManager:
                 Variable(dev_sent1s_pos_embedinput, volatile=True),
                 Variable(dev_sent2s_num),
                 Variable(dev_sent2s_pos_embedinput, volatile=True),
+                Variable(targets_tensor),
+            )
+        elif self.config.encoder_type == 'decomposable':
+            return (
+                Variable(dev_sent1s_num),
+                Variable(dev_sent2s_num),
                 Variable(targets_tensor),
             )
 
@@ -187,6 +206,12 @@ class DataManager:
                 Variable(test_sent2s_pos_embedinput, volatile=True),
                 Variable(targets_tensor),
             )
+        elif self.config.encoder_type == 'decomposable':
+            return (
+                Variable(test_sent1s_num),
+                Variable(test_sent2s_num),
+                Variable(targets_tensor),
+            )
 
         seq1_packed_tensor, seq1_idx_unsort = self.vocab.get_packedseq_from_sent_batch(
             seq_tensor=test_sent1s_num,
@@ -208,6 +233,16 @@ class DataManager:
             seq2_idx_unsort,
             Variable(targets_tensor),  # [batch_size,]
         )
+
+    def get_pos_embedinputinput(self, sents):
+        pos_embedinput_arr = np.zeros((len(sents), self.config.max_length))
+        for i, sent in enumerate(sents):
+            for j, _ in enumerate(sent):
+                if j < self.config.max_length:
+                    pos_embedinput_arr[i, j] = j + 1
+        #print(pos_embedinput_arr.shape)
+        pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
+        return pos_embedinput_tensor
 
     def load_tok_data(self, path, train=False):
         sent1s, sent2s, targets = [], [], []
@@ -256,29 +291,17 @@ class DataManager:
         )
 
         print('numberizing')
-        sent1s_num = [self.vocab.numberize_sentence(s) for s in sent1s]
-        sent2s_num = [self.vocab.numberize_sentence(s) for s in sent2s]
+        sent1s_num, sent1_bin_tensor, sent1_len_tensor = self.\
+            numberize_sents_to_tensor(sent1s)
+        sent2s_num, sent2_bin_tensor, sent2_len_tensor = self.\
+            numberize_sents_to_tensor(sent2s)
         print('done.')
 
-        # load numberized into tensors
-        sent1_bin_tensor, sent1_len_tensor = self.get_numberized_tensor(
-            sent1s_num)
-        sent2_bin_tensor, sent2_len_tensor = self.get_numberized_tensor(
-            sent2s_num)
-
         # positional embeddings
-        def get_pos_embedinputinput(sents):
-            pos_embedinput_arr = np.zeros(shape=(len(sents), self.config.max_length))
-            for i, sent in enumerate(sents):
-                for j, _ in enumerate(sent):
-                    if j < self.config.max_length:
-                        pos_embedinput_arr[i, j] = j + 1
-            print(pos_embedinput_arr.shape)
-            pos_embedinput_tensor = torch.LongTensor(pos_embedinput_arr)
-            return pos_embedinput_tensor
-
-        sent1_pos_embedinput_tensor = get_pos_embedinputinput(sent1s_num)  # [batch_size, max_len]
-        sent2_pos_embedinput_tensor = get_pos_embedinputinput(sent2s_num)
+        sent1_pos_embedinput_tensor = self.get_pos_embedinputinput(
+            sent1s_num)  # [batch_size, max_len]
+        sent2_pos_embedinput_tensor = self.get_pos_embedinputinput(
+            sent2s_num)
 
 
         return (
@@ -288,16 +311,22 @@ class DataManager:
             targets, n_rows
         )
 
-    def get_numberized_tensor(self, sent_num):
-        """ sent_num: list of lists of word ids """
-        dat_size = len(sent_num)
+    def numberize_sents_to_tensor(self, sents):
+        sents_num = [self.vocab.numberize_sentence(s) for s in sents]
+
+        return self.get_numberized_tensor(sents_num)
+
+
+    def get_numberized_tensor(self, sents_num):
+        """ sents_num: list of lists of word ids """
+        dat_size = len(sents_num)
         bin_tensor = torch.LongTensor(dat_size, self.max_len)
         bin_tensor.fill_(vocab_pytorch.PAD_token)
         # slen_max = htable_params.max_len
         slen_tensor = torch.IntTensor(dat_size,)
 
         b = 0
-        for sent_wordids in sent_num:
+        for sent_wordids in sents_num:
             slen = min(len(sent_wordids), self.max_len)
             slen_tensor[b] = slen
             for w in range(slen):
@@ -305,4 +334,55 @@ class DataManager:
                 bin_tensor[b, slen - 1 - w] = wordid  # fill in reverse
             b += 1
 
-        return bin_tensor, slen_tensor
+        return sents_num, bin_tensor, slen_tensor
+
+    def add_glove_to_vocab(self, path, d_embed):
+        name = 'glove.6B.' + str(d_embed) + 'd.txt'
+        name_pt = name + '.pt'
+        path_pt = os.path.join(path, name_pt)
+
+        # load Glove
+        if os.path.isfile(path_pt):  # Load .pt file if there is any cached
+            print('Loading vectors from {}'.format(path_pt))
+            itos, stoi, vectors, dim = torch.load(path_pt)
+        else:  # Read from Glove .txt file
+            path = os.path.join(path, name)
+            if not os.path.isfile(path):
+                raise RuntimeError('No files found at {}'.format(path))
+            try:
+                with io.open(path, encoding="utf8") as f:
+                    lines = [line for line in f]
+            except:
+                raise RuntimeError('Could not read {} as format UTF8'.format(path))
+            print("Loading vectors from {}".format(path))
+
+            itos, vectors, dim = [], array.array(str('d')), None
+
+            for line in tqdm(lines, total=len(lines)):
+                entries = line.rstrip().split(" ")
+                word, entries = entries[0], entries[1:]
+                if dim is None and len(entries) > 1:
+                    dim = len(entries)
+                elif len(entries) == 1:
+                    logger.warning("Skipping token {} with 1-dimensional "
+                                   "vector {}; likely a header".format(word, entries))
+                    continue
+                elif dim != len(entries):
+                    raise RuntimeError(
+                        "Vector for token {} has {} dimensions, but previously "
+                        "read vectors have {} dimensions. All vectors must have "
+                        "the same number of dimensions.".format(word, len(entries), dim))
+                vectors.extend(float(x) for x in entries)
+                itos.append(word)
+            stoi = {word: i for i, word in enumerate(itos)}
+            vectors = torch.Tensor(vectors).view(-1, dim)
+            print(vectors.shape)
+            print('Saving vectors to {}'.format(path_pt))
+            torch.save((itos, stoi, vectors, dim), path_pt)
+
+        # Add it into vocab
+        print('Adding GloVe words into vocab')
+        for i, word in enumerate(itos):
+            self.vocab.addWord(word)
+
+

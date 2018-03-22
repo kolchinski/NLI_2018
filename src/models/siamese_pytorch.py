@@ -1,9 +1,10 @@
 # adapted from https://github.com/pytorch/examples/blob/master/snli/model.py
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-import transformer_pytorch
+import src.models.transformer_pytorch as transformer_pytorch
 
 
 class RNNEncoder(nn.Module):
@@ -12,10 +13,20 @@ class RNNEncoder(nn.Module):
         super(RNNEncoder, self).__init__()
         self.config = config
         input_size = config.embedding_size
-        self.rnn = nn.LSTM(
-            input_size=input_size, hidden_size=config.hidden_size,
-            num_layers=config.n_layers, dropout=config.dp_ratio,
-            bidirectional=config.bidirectional)
+        if config.n_layers == 1:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.hidden_size,
+                num_layers=config.n_layers, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+        elif config.n_layers == 2:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.layer1_hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+            self.rnn2 = nn.LSTM(
+                input_size=config.layer1_hidden_size*2, hidden_size=config.hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
 
     def initHidden(self, batch_size):
         if self.config.bidirectional:
@@ -26,7 +37,11 @@ class RNNEncoder(nn.Module):
         return (h0, c0)
 
     def forward(self, inputs, hidden, batch_size):
-        outputs, (ht, ct) = self.rnn(inputs, hidden)
+        if self.config.n_layers == 2:
+            outputs, (ht, ct) = self.rnn(inputs)
+            outputs, (ht, ct) = self.rnn2(outputs)
+        else:
+            outputs, (ht, ct) = self.rnn(inputs, hidden)
         return outputs
 
 
@@ -35,6 +50,71 @@ class TransformerEncoder(nn.Module):
     def __init__(self, config):
         super(RNNEncoder, self).__init__()
         self.config = config
+
+
+class SiameseClassifierSentEmbed(nn.Module):
+
+    def __init__(self, config, embed, encoder):
+        super(SiameseClassifierSentEmbed, self).__init__()
+        self.config = config
+        self.embed = embed
+        self.encoder = encoder
+
+    def forward(
+        self,
+        encoder_input,
+        encoder_len,
+        encoder_pos_emb_input,
+        encoder_unsort,
+        encoder_init_hidden,
+        batch_size
+    ):
+        prem_embed = encoder_input
+
+        if self.config.encoder_type == 'transformer':
+            premise = self.encoder(  # [max_len, batch_size, d_model]
+                src_seq=encoder_input,
+                src_pos=encoder_pos_emb_input,
+            )
+        elif self.config.encoder_type == 'rnn':
+            premise = self.encoder(
+                inputs=prem_embed,
+                hidden=encoder_init_hidden,
+                batch_size=batch_size
+            )
+            mask_value = -np.infty if self.config.sent_embed_type == 'maxpool' \
+                else 0
+            premise = nn.utils.rnn.pad_packed_sequence(
+                premise, padding_value=mask_value)[0]
+            premise = premise.index_select(1, encoder_unsort)
+
+        len = premise.size(0)
+        mask = Variable(torch.zeros(premise.size()))
+        mask = mask.byte()
+        if self.config.cuda:
+            mask = mask.cuda()
+        for i, _ in enumerate(encoder_len.data):
+            l = encoder_len.data[i]
+            if l < len:
+                mask[l:, i, :] = 1
+        premise[mask] = 0
+
+        if self.config.sent_embed_type == 'maxpool':
+            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
+        elif self.config.sent_embed_type == 'meanpool':
+            premise_sent_embed = torch.div(
+                torch.sum(premise, dim=0),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
+            )
+        elif self.config.sent_embed_type == 'mix':
+            premise_max = torch.max(premise, dim=0)[0]
+            premise_mean = torch.div(
+                torch.sum(premise, dim=0),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
+            )
+            premise_sent_embed = torch.cat([premise_max,premise_mean],1)
+
+        return premise_sent_embed
 
 
 class SiameseClassifier(nn.Module):
@@ -56,7 +136,8 @@ class SiameseClassifier(nn.Module):
         elif config.encoder_type == 'rnn':
             self.encoder = RNNEncoder(config)
         else:
-            raise Exception("encoder_type not here {}".format(config.encoder_type))
+            raise Exception("encoder_type not here {}".format(
+                config.encoder_type))
 
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
@@ -64,13 +145,20 @@ class SiameseClassifier(nn.Module):
         seq_in_size = 4 * config.hidden_size
         if self.config.bidirectional:
             seq_in_size *= 2
-        assert len(config.mlp_classif_hidden_size_list) == 2
-        self.out = nn.Sequential(
-            nn.Linear(seq_in_size, config.mlp_classif_hidden_size_list[0]),
-            self.dropout,
-            self.relu,
-            nn.Linear(config.mlp_classif_hidden_size_list[0], config.d_out),
+
+        classifier_transforms = []
+        prev_hidden_size = seq_in_size
+        for next_hidden_size in config.mlp_classif_hidden_size_list:
+            classifier_transforms.extend([
+                nn.Linear(prev_hidden_size, next_hidden_size),
+                self.relu,
+                self.dropout,
+            ])
+            prev_hidden_size = next_hidden_size
+        classifier_transforms.append(
+            nn.Linear(prev_hidden_size, config.d_out)
         )
+        self.out = nn.Sequential(*classifier_transforms)
 
     def forward(
         self,

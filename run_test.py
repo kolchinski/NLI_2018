@@ -24,6 +24,8 @@ import constants
 
 args = dotdict({
     'add_squad': True,
+    #'type': 'decomposable',
+    #'encoder_type': 'decomposable',
     'type': 'siamese',
     'encoder_type': 'rnn',
     'lr': 0.01,
@@ -35,9 +37,11 @@ args = dotdict({
     'test_batches_per_epoch': 500,
     'input_size': 300,
     'hidden_size': 2048,
+    #'hidden_size': 200,
+    'layer1_hidden_size': 1024,
     'embedding_size': 300,
-    'n_layers': 1,
-    'bidirectional': False,
+    'n_layers': 2,
+    'bidirectional': True,
     'fix_emb': True,
     'd_proj': None,
     'dp_ratio': 0.7,
@@ -126,7 +130,7 @@ if __name__ == "__main__":
                 batch_size=args.batch_size)
         elif args.encoder_type == 'decomposable':
             sent1, sent2, targets = \
-                dm.sample_dev_batch(use_cuda=args.cuda)
+                dm.get_next_test_batch(use_cuda=args.cuda)
         else:
             raise Exception('encoder_type not supported {}'.format(
                 args.encoder_type))

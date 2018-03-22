@@ -13,10 +13,20 @@ class RNNEncoder(nn.Module):
         super(RNNEncoder, self).__init__()
         self.config = config
         input_size = config.embedding_size
-        self.rnn = nn.LSTM(
-            input_size=input_size, hidden_size=config.hidden_size,
-            num_layers=config.n_layers, dropout=config.dp_ratio,
-            bidirectional=config.bidirectional)
+        if config.n_layers == 1:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.hidden_size,
+                num_layers=config.n_layers, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+        elif config.n_layers == 2:
+            self.rnn = nn.LSTM(
+                input_size=input_size, hidden_size=config.layer1_hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
+            self.rnn2 = nn.LSTM(
+                input_size=config.layer1_hidden_size*2, hidden_size=config.hidden_size,
+                num_layers=1, dropout=config.dp_ratio,
+                bidirectional=config.bidirectional)
 
     def initHidden(self, batch_size):
         if self.config.bidirectional:
@@ -27,7 +37,11 @@ class RNNEncoder(nn.Module):
         return (h0, c0)
 
     def forward(self, inputs, hidden, batch_size):
-        outputs, (ht, ct) = self.rnn(inputs, hidden)
+        if self.config.n_layers == 2:
+            outputs, (ht, ct) = self.rnn(inputs)
+            outputs, (ht, ct) = self.rnn2(outputs)
+        else:
+            outputs, (ht, ct) = self.rnn(inputs, hidden)
         return outputs
 
 
@@ -74,15 +88,31 @@ class SiameseClassifierSentEmbed(nn.Module):
                 premise, padding_value=mask_value)[0]  # [seq_len, bs, nunits]
             premise = premise.index_select(1, encoder_unsort)
 
-        if self.config.sent_embed_type == 'maxpool':
-            premise_sent_embed = torch.max(premise, 0)[0]  # [bsize, nunits]
+        len = premise.size(0)
+        mask = Variable(torch.zeros(premise.size()))
+        mask = mask.byte()
+        if self.config.cuda:
+            mask = mask.cuda()
+        for i, _ in enumerate(encoder_len.data):
+            l = encoder_len.data[i]
+            if l < len:
+                mask[l:, i, :] = 1
+        premise[mask] = 0
 
+        if self.config.sent_embed_type == 'maxpool':
+            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
         elif self.config.sent_embed_type == 'meanpool':
-            premise = torch.sum(premise, 0)
             premise_sent_embed = torch.div(
-                torch.sum(premise, dim=0)[0],
-                encoder_len.data,
+                torch.sum(premise, dim=0),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
             )
+        elif self.config.sent_embed_type == 'mix':
+            premise_max = torch.max(premise, dim=0)[0]
+            premise_mean = torch.div(
+                torch.sum(premise, dim=0),
+                Variable(encoder_len.data.unsqueeze(1)).float(),
+            )
+            premise_sent_embed = torch.cat([premise_max,premise_mean],1)
         elif self.config.sent_embed_type == 'selfattention':
             premise = premise.permute(1, 0, 2)  # [bsize, seq_len, d_model]
             return premise, encoder_len

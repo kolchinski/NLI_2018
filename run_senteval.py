@@ -20,6 +20,7 @@ import src.models.load_embeddings as load_embeddings
 from src.models.seq2seq_model_pytorch import Seq2SeqPytorch
 import src.models.model_pipeline_pytorch as model_pipeline_pytorch
 import src.models.siamese_pytorch as siamese_pytorch
+import src.models.decomposable_pytorch as decomposable_pytorch
 from src.utils import dotdict
 import src.constants as constants
 
@@ -33,24 +34,31 @@ args = dotdict({
     'self_attn_inner_size': 128,
     'self_attn_outer_size': 8,
     'sent_embed_type': 'selfattention',
+    #'type': 'decomposable',
+    #'encoder_type': 'decomposable',
     'encoder_type': 'rnn',
+    'sent_embed_type': 'maxpool',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
-    'max_length': 100,
+    'max_length': 50,
     'epochs': 10,
     'batch_size': 128,
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
+    #'hidden_size': 200, #For decomposable model
+    'para_init': 0.01,
+    'intra_attn': True, # if we use intra_attention for decomposable model
+    'hidden_size': 2048, #1024 if n_layer=2
+    'layer1_hidden_size': 1024,
     'n_layers': 1,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.0,
     'd_out': 3,  # 3 classes
-    'mlp_classif_hidden_size_list': [512, 512],
+    'mlp_classif_hidden_size_list': [512],
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -106,21 +114,33 @@ if __name__ == "__main__":
         if args.add_squad:  # add squad to vocab to match checkpoint
             squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
         args.n_embed = dm.vocab.n_words
-
-        if True:
+        if args.type == 'siamese':
             model = siamese_pytorch.SiameseClassifier(config=args)
-            model.embed.weight.data = load_embeddings.load_embeddings(
-                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        elif args.type == 'decomposable':
+            model = decomposable_pytorch.SNLIClassifier(config=args)
         else:
             model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+
+        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
+        dm.add_glove_to_vocab(constants.EMBED_DATA_PATH, args.embedding_size)
+
+        if args.type == 'siamese':
+            model.embed.weight.data = load_embeddings.load_embeddings(
+                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        elif args.type == 'decomposable':
+            model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
+                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+        else:
             model.encoder.embedding.weight.data = load_embeddings.\
                 load_embeddings(
                     dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
 
-        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
-
-        sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
-            config=args, embed=model.embed, encoder=model.encoder)
+        if args.type == 'siamese':
+            sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
+                config=args, embed=model.embed, encoder=model.encoder)
+        elif args.type == 'decomposable':
+            sent_model = decomposable_pytorch.DecomposableClassifierSentEmbed(
+                config=args, embed=None, encoder=model.encoder)
 
         model.eval()
         sent_model.eval()
@@ -166,19 +186,34 @@ if __name__ == "__main__":
                     use_cuda=config.cuda,
                 )
             sent_posembinput = None
+            sent_len_tensor = Variable(sent_len_tensor)
             encoder_init_hidden = model.encoder.initHidden(
                 batch_size=batch_size)
+        elif args.encoder_type == 'decomposable':
+            sent_bin_tensor = Variable(sent_bin_tensor)
+            sent_len_tensor = Variable(sent_len_tensor)
+            sent_posembinput = None
+            sent_unsort = None
+            encoder_init_hidden = None
+        else:
+            raise Exception('encoder_type not supported {}'.format(
+                args.encoder_type))
+
         if config.cuda:
             model = model.cuda()
             if config.encoder_type == 'transformer':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
                 sent_posembinput = sent_posembinput.cuda()
             if config.encoder_type == 'rnn':
+                sent_len_tensor = sent_len_tensor.cuda()
                 if len(encoder_init_hidden):
                     encoder_init_hidden = [
                         x.cuda() for x in encoder_init_hidden]
                 else:
                     encoder_init_hidden = encoder_init_hidden.cuda()
+            if args.encoder_type == 'decomposable':
+                sent_bin_tensor = sent_bin_tensor.cuda()
 
         embeddings, encoder_len = model(
             encoder_init_hidden=encoder_init_hidden,

@@ -24,23 +24,18 @@ class SelfAttentionModel(nn.Module):
         if self.config.bidirectional:
             self.num_units *= 2
 
-        # w1_selfattn = torch.FloatTensor(
-        #     config.self_attn_inner_size, self.num_units
-        # ).normal_(0, 0.1)
-        # w1_selfattn = w1_selfattn.cuda()
-        # w2_selfattn = torch.FloatTensor(
-        #     config.self_attn_outer_size, config.self_attn_inner_size
-        # ).normal_(0, 0.1)
-        # w2_selfattn = w2_selfattn.cuda()
-        # self.w1_selfattn = nn.Parameter(
-        #     w1_selfattn, requires_grad=True)
-        # self.w2_selfattn = nn.Parameter(
-        #     w2_selfattn, requires_grad=True)
-
-        self.w1_selfattn = nn.Linear(
-            config.self_attn_inner_size, self.num_units)
-        self.w2_selfattn = nn.Linear(
-            config.self_attn_outer_size, config.self_attn_inner_size)
+        w1_selfattn = torch.FloatTensor(
+            config.self_attn_inner_size, self.num_units
+        ).normal_(0, 0.1)
+        w1_selfattn = w1_selfattn.cuda()
+        w2_selfattn = torch.FloatTensor(
+            config.self_attn_outer_size, config.self_attn_inner_size
+        ).normal_(0, 0.1)
+        w2_selfattn = w2_selfattn.cuda()
+        self.w1_selfattn = nn.Parameter(
+            w1_selfattn, requires_grad=True)
+        self.w2_selfattn = nn.Parameter(
+            w2_selfattn, requires_grad=True)
 
         self.tanh = torch.nn.Tanh()
         self.softmax = torch.nn.Softmax(dim=1)
@@ -48,14 +43,10 @@ class SelfAttentionModel(nn.Module):
     def forward(self, encoder_outputs):
         encoder_out_tr = encoder_outputs.permute(0, 2, 1)  # [bs, nunits, slen]
 
-        # pre_softmax = torch.matmul(
-        #     self.w2_selfattn,
-        #     self.tanh(torch.matmul(self.w1_selfattn, encoder_out_tr)),
-        # )
-        pre_softmax = \
-            self.w2_selfattn(
-                self.tanh(
-                    self.w1_selfattn(encoder_out_tr)))
+        pre_softmax = torch.matmul(
+            self.w2_selfattn,
+            self.tanh(torch.matmul(self.w1_selfattn, encoder_out_tr)),
+        )
         A_selfattn = self.softmax(pre_softmax)
 
         # [bs, attn_outer_size, num_units]

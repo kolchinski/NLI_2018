@@ -82,14 +82,14 @@ params_senteval = {
     'task_path': './SentEval/data/senteval_data',
     'usepytorch': True,
     'kfold': 5,
-}
-params_senteval['classifier'] = {
-    'use_selfattention': True,
-    'nhid': 40,
-    'optim': 'adam',
-    'batch_size': 64,
-    'tenacity': 5,
-    'epoch_size': 4
+    'classifier': {
+        'use_selfattention': True,
+        'nhid': 40,
+        'optim': 'adam',
+        'batch_size': 64,
+        'tenacity': 5,
+        'epoch_size': 4
+    },
 }
 
 # Set up logger

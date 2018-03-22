@@ -193,7 +193,7 @@ if __name__ == "__main__":
         if config.sent_embed_type == 'selfattention':
             extra_zeros = np.zeros(shape=(
                batch_size,
-               config.max_len - embeddings_np.shape[1],
+               config.max_length - embeddings_np.shape[1],
                embeddings_np.shape[2],
                )
             )

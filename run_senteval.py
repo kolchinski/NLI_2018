@@ -189,8 +189,6 @@ if __name__ == "__main__":
             batch_size=batch_size
         )
         embeddings_np = embeddings.data.cpu().numpy()
-        print(model.config.sent_embed_type)
-        print(embeddings_np.shape)
         # add zeros to max len
         if config.sent_embed_type == 'selfattention':
             extra_zeros = np.zeros(shape=(

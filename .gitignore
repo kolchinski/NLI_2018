@@ -6,8 +6,10 @@ static/snli_1.0/*.labels
 static/snli_1.0/*.s1
 static/snli_1.0/*.s2
 static/glove/*
+static/squad/*
 *.pyc
 *DS_Store*
 static/glove
 checkpoint/*
 checkpoint*
+SentEval/data/*

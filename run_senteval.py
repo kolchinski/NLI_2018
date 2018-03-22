@@ -183,9 +183,9 @@ if __name__ == "__main__":
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
             batch_size=batch_size
-        ).data.cpu().numpy()
+        )
 
-        return embeddings
+        return embeddings.data.cpu().numpy()
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
     transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',

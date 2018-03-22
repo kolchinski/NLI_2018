@@ -23,17 +23,18 @@ class SelfAttentionModel(nn.Module):
         self.num_out_units = self.num_units * config.self_attn_outer_size
         if self.config.bidirectional:
             self.num_units *= 2
+        w1_selfattn = torch.FloatTensor(
+            config.self_attn_inner_size, self.num_units
+        ).normal_(0, 0.1)
+        w1_selfattn = w1_selfattn.cuda()
+        w2_selfattn = torch.FloatTensor(
+            config.self_attn_outer_size, config.self_attn_inner_size
+        ).normal_(0, 0.1),
+        w2_selfattn = w2_selfattn.cuda()
         self.w1_selfattn = nn.Parameter(
-            torch.FloatTensor(
-                config.self_attn_inner_size, self.num_units
-            ).normal_(0, 0.1),
-            requires_grad=True,
-        )
+            w1_selfattn, requires_grad=True)
         self.w2_selfattn = nn.Parameter(
-            torch.FloatTensor(
-                config.self_attn_outer_size, config.self_attn_inner_size
-            ).normal_(0, 0.1),
-            requires_grad=True,
+            w2_selfattn, requires_grad=True,
         )
         self.tanh = torch.nn.Tanh()
         self.softmax = torch.nn.Softmax(dim=1)

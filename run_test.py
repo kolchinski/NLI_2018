@@ -4,10 +4,12 @@ sys.path.append('./src/models')
 import torch.nn as nn
 import numpy as np
 import dataman.wrangle as wrangle
+from src.dataman.squad_classif_data_manager import SquadDataManager
 from models.seq2seq_model_pytorch import Seq2SeqPytorch
 import models.model_pipeline_pytorch as model_pipeline_pytorch
 import models.siamese_pytorch as siamese_pytorch
 import models.decomposable_pytorch as decomposable_pytorch
+import models.squad_pytorch as squad_pytorch
 from utils import dotdict
 import torch
 import torch.optim as optim
@@ -21,6 +23,7 @@ import models.load_embeddings as load_embeddings
 import constants
 
 args = dotdict({
+    'add_squad': True,
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
     'type': 'siamese',
@@ -33,8 +36,8 @@ args = dotdict({
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
+    'hidden_size': 2048,
     #'hidden_size': 200,
-    'hidden_size': 1024,
     'layer1_hidden_size': 1024,
     'embedding_size': 300,
     'n_layers': 2,
@@ -50,6 +53,28 @@ args = dotdict({
 })
 state = {k: v for k, v in args.items()}
 
+squad_args = dotdict({
+    'type': 'siamese',
+    'encoder_type': 'rnn',
+    'lr': 0.05,
+    'learning_rate_decay': 0.99,
+    'max_length': 50,
+    'batch_size': 128,
+    'batches_per_epoch': 500,
+    'test_batches_per_epoch': 500,
+    'input_size': 300,
+    'hidden_size': 2048,
+    'n_layers': 1,
+    'bidirectional': False,
+    'embedding_size': 300,
+    'fix_emb': True,
+    'dp_ratio': 0.3,
+    'd_out': 2,  # 2 classes
+    'mlp_classif_hidden_size_list': [512, 512],
+    'cuda': torch.cuda.is_available(),
+})
+squad_state = {k: v for k, v in squad_args.items()}
+
 
 if __name__ == "__main__":
     print(args)
@@ -57,6 +82,8 @@ if __name__ == "__main__":
     print('found checkpoint dir {}'.format(checkpoint))
 
     dm = wrangle.DataManager(args)
+    if args.add_squad:  # add squad to vocab to match checkpoint
+        squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
     args.n_embed = dm.vocab.n_words
     if args.type == 'siamese':
         model = siamese_pytorch.SiameseClassifier(config=args)

@@ -1,4 +1,6 @@
 #python 3
 class dotdict(dict):
     def __getattr__(self, name):
-        return self[name]
+        if name in self:
+            return self[name]
+        raise AttributeError

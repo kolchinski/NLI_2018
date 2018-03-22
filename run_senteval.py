@@ -30,6 +30,8 @@ import logging
 args = dotdict({
     'add_squad': True,
     'type': 'siamese',
+    'self_attn_inner_size': 128,
+    'self_attn_outer_size':8,
     'sent_embed_type': 'meanpool',
     'encoder_type': 'rnn',
     'lr': 0.05,

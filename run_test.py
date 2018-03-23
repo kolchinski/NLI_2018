@@ -46,7 +46,7 @@ args = dotdict({
     'd_proj': None,
     'dp_ratio': 0.7,
     'd_out': 3,  # 3 classes
-    'mlp_classif_hidden_size_list': [512],
+    'mlp_classif_hidden_size_list': [512,512],
     'para_init': 0.01, # parameter init Gaussian variance,
     'intra_attn': True, # if we use intra_attention for decomposable model
     'cuda': torch.cuda.is_available(),
@@ -65,7 +65,7 @@ squad_args = dotdict({
     'input_size': 300,
     'hidden_size': 2048,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.3,

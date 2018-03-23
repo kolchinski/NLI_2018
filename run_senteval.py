@@ -33,8 +33,8 @@ args = dotdict({
     #'encoder_type': 'decomposable',
     'add_squad': True,
     'type': 'siamese',
-    'encoder_type': 'transformer',
-    'sent_embed_type': 'mix',
+    'encoder_type': 'rnn',
+    'sent_embed_type': 'maxpool',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
@@ -47,15 +47,15 @@ args = dotdict({
     #'hidden_size': 200, #For decomposable model
     'para_init': 0.01,
     'intra_attn': True, # if we use intra_attention for decomposable model
-    'hidden_size': 512, #1024 if n_layer=2
+    'hidden_size': 2048, #1024 if n_layer=2
     'layer1_hidden_size': 1024,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.3,
     'd_out': 3,  # 3 classes
-    'mlp_classif_hidden_size_list': [512],
+    'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}

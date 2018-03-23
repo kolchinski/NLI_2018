@@ -34,7 +34,7 @@ nli_args = dotdict({
     'input_size': 300,
     'hidden_size': 2048,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.3,
@@ -56,7 +56,7 @@ squad_args = dotdict({
     'input_size': 300,
     'hidden_size': 2048,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.3,
@@ -87,8 +87,27 @@ if __name__ == "__main__":
     nli_model.embed.weight.data = load_embeddings.load_embeddings(
         nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
 
+    print("number of trainable parameters found {}".format(
+        sum(param.nelement() for param in nli_model.parameters()if param.requires_grad)
+        + sum(param.nelement() for param in squad_model.parameters()if param.requires_grad)
+        - sum(param.nelement() for param in nli_model.embed.parameters()if param.requires_grad)
+        - sum(param.nelement() for param in nli_model.encoder.parameters()if param.requires_grad) ))
+
     best_nli_dev_acc = 0
     best_nli_train_acc = -np.infty
+
+    # load trained model from checkpoint
+    if len(sys.argv) > 1:
+        checkpoint_dir = sys.argv[1]
+        print('loading from checkpoint in {}'.format(checkpoint_dir))
+        model_pipeline_pytorch.load_checkpoint(nli_model, checkpoint=checkpoint_dir)
+        nli_state['lr'] = 0.01
+        print('resetting lr as {}'.format(nli_state['lr']))
+        squad_model = squad_pytorch.SquadClassifier(
+            config=squad_args,
+            embed=nli_model.embed,
+            encoder=nli_model.encoder,
+        )
 
     nli_criterion = nn.NLLLoss()
     squad_criterion = nn.NLLLoss()
@@ -150,6 +169,14 @@ if __name__ == "__main__":
                 print('New best model: {} vs {}'.format(
                     nli_dev_acc, best_nli_dev_acc))
                 best_nli_dev_acc = nli_dev_acc
+                model_pipeline_pytorch.save_checkpoint(
+                    state={
+                        'epoch': epoch + 1,
+                        'state_dict': nli_model.state_dict(),
+                        'acc': nli_dev_acc,
+                        'best_acc': best_nli_dev_acc,
+                        'optimizer': nli_optimizer.state_dict()
+                    }, is_best=True)
             print('Saving to checkpoint')
             model_pipeline_pytorch.save_checkpoint(
                 state={
@@ -158,7 +185,7 @@ if __name__ == "__main__":
                     'acc': nli_dev_acc,
                     'best_acc': best_nli_dev_acc,
                     'optimizer': nli_optimizer.state_dict()
-                }, is_best=True)
+                }, is_best=False)
 
         nli_state['lr'] *= nli_args.learning_rate_decay
         squad_state['lr'] *= squad_args.learning_rate_decay

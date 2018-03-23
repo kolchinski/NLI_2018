@@ -56,9 +56,9 @@ args = dotdict({
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
-    'dp_ratio': 0.0,
+    'dp_ratio': 0.3,
     'd_out': 3,  # 3 classes
-    'mlp_classif_hidden_size_list': [512],
+    'mlp_classif_hidden_size_list': [512, 512],
     'cuda': torch.cuda.is_available(),
 })
 state = {k: v for k, v in args.items()}
@@ -214,6 +214,7 @@ if __name__ == "__main__":
                     encoder_init_hidden = encoder_init_hidden.cuda()
             if args.encoder_type == 'decomposable':
                 sent_bin_tensor = sent_bin_tensor.cuda()
+                sent_len_tensor = sent_len_tensor.cuda()
 
         embeddings, encoder_len = model(
             encoder_init_hidden=encoder_init_hidden,
@@ -238,6 +239,6 @@ if __name__ == "__main__":
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
     transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',
-                      'SICKEntailment', 'SICKRelatedness', 'STSBenchmark']
+                      'SICKEntailment', 'SICKRelatedness', 'STS14']
     results = se.eval(transfer_tasks)
     print(results)

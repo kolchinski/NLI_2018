@@ -87,6 +87,12 @@ if __name__ == "__main__":
     nli_model.embed.weight.data = load_embeddings.load_embeddings(
         nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
 
+    print("number of trainable parameters found {}".format(
+        sum(param.nelement() for param in nli_model.parameters()if param.requires_grad)
+        + sum(param.nelement() for param in squad_model.parameters()if param.requires_grad)
+        - sum(param.nelement() for param in nli_model.embed.parameters()if param.requires_grad)
+        - sum(param.nelement() for param in nli_model.encoder.parameters()if param.requires_grad) ))
+
     best_nli_dev_acc = 0
     best_nli_train_acc = -np.infty
 

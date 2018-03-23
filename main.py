@@ -30,9 +30,9 @@ args = dotdict({
     'batches_per_epoch': 3000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 1024,
+    'hidden_size': 2048,
     'layer1_hidden_size': 1024,
-    'n_layers': 2,
+    'n_layers': 1,
     'bidirectional': True,
     'embedding_size': 300,
     'fix_emb': True,
@@ -58,6 +58,11 @@ if __name__ == "__main__":
 
     model.embed.weight.data = load_embeddings.load_embeddings(
         dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+
+    # Numbers of parameters
+    print("number of trainable parameters found {}".format(sum(
+        param.nelement() for param in model.parameters()
+        if param.requires_grad)))
 
     best_dev_acc = 0
     best_train_acc = -np.infty

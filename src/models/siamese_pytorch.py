@@ -82,10 +82,10 @@ class SiameseClassifierSentEmbed(nn.Module):
                 hidden=encoder_init_hidden,
                 batch_size=batch_size
             )
-            mask_value = -np.infty if self.config.sent_embed_type == 'maxpool' \
-                else 0
+            mask_value = -np.infty if \
+                self.config.sent_embed_type == 'maxpool' else 0
             premise = nn.utils.rnn.pad_packed_sequence(
-                premise, padding_value=mask_value)[0]
+                premise, padding_value=mask_value)[0]  # [seq_len, bs, nunits]
             premise = premise.index_select(1, encoder_unsort)
 
         len = premise.size(0)
@@ -99,7 +99,7 @@ class SiameseClassifierSentEmbed(nn.Module):
                 mask[l:, i, :] = 1
         premise[mask] = 0
         if self.config.sent_embed_type == 'maxpool':
-            premise_sent_embed = torch.max(premise, 0)[0]  # [batch_size, embed_size]
+            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
         elif self.config.sent_embed_type == 'meanpool':
             premise_sent_embed = torch.div(
                 torch.sum(premise, dim=0),
@@ -112,8 +112,11 @@ class SiameseClassifierSentEmbed(nn.Module):
                 Variable(encoder_len.data.unsqueeze(1)).float(),
             )
             premise_sent_embed = torch.cat([premise_max,premise_mean],1)
+        elif self.config.sent_embed_type == 'selfattention':
+            premise = premise.permute(1, 0, 2)  # [bsize, seq_len, d_model]
+            return premise, encoder_len
 
-        return premise_sent_embed
+        return premise_sent_embed, encoder_len
 
 
 class SiameseClassifier(nn.Module):

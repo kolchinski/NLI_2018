@@ -29,10 +29,13 @@ import logging
 
 
 args = dotdict({
-    #'type': 'decomposable',
-    #'encoder_type': 'decomposable',
     'add_squad': True,
     'type': 'siamese',
+    'self_attn_inner_size': 128,
+    'self_attn_outer_size': 8,
+    'sent_embed_type': 'selfattention',
+    #'type': 'decomposable',
+    #'encoder_type': 'decomposable',
     'encoder_type': 'rnn',
     'sent_embed_type': 'maxpool',
     'lr': 0.05,
@@ -87,13 +90,14 @@ params_senteval = {
     'task_path': './SentEval/data/senteval_data',
     'usepytorch': True,
     'kfold': 5,
-}
-params_senteval['classifier'] = {
-    'nhid': 0,
-    'optim': 'adam',
-    'batch_size': 64,
-    'tenacity': 5,
-    'epoch_size': 4
+    'classifier': {
+        'use_selfattention': True,
+        'nhid': 40,
+        'optim': 'adam',
+        'batch_size': 64,
+        'tenacity': 5,
+        'epoch_size': 4
+    },
 }
 
 # Set up logger
@@ -110,7 +114,6 @@ if __name__ == "__main__":
         if args.add_squad:  # add squad to vocab to match checkpoint
             squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
         args.n_embed = dm.vocab.n_words
-
         if args.type == 'siamese':
             model = siamese_pytorch.SiameseClassifier(config=args)
         elif args.type == 'decomposable':
@@ -148,6 +151,10 @@ if __name__ == "__main__":
         params['config'] = args
         params['dm'] = dm
         params['sent_model'] = sent_model
+        params['classifier'].update({
+            'sent_model': sent_model,
+            'config': args,
+        })
 
     def batcher(params, batch):
         ''' input batch is list of sentences (list of words/tokenized)'''
@@ -209,16 +216,26 @@ if __name__ == "__main__":
                 sent_bin_tensor = sent_bin_tensor.cuda()
                 sent_len_tensor = sent_len_tensor.cuda()
 
-        embeddings = model(
+        embeddings, encoder_len = model(
             encoder_init_hidden=encoder_init_hidden,
             encoder_input=sent_bin_tensor,
             encoder_len=sent_len_tensor,
             encoder_pos_emb_input=sent_posembinput,
             encoder_unsort=sent_unsort,
             batch_size=batch_size
-        ).data.cpu().numpy()
+        )
+        embeddings_np = embeddings.data.cpu().numpy()
+        # add zeros to max len
+        if config.sent_embed_type == 'selfattention':
+            extra_zeros = np.zeros(shape=(
+               batch_size,
+               config.max_length - embeddings_np.shape[1],
+               embeddings_np.shape[2],
+            ))
+            embeddings_np = np.concatenate(
+                [embeddings_np, extra_zeros], axis=1)
 
-        return embeddings
+        return embeddings_np
 
     se = senteval.engine.SE(params_senteval, batcher, prepare)
     transfer_tasks = ['MR', 'CR', 'MPQA', 'SUBJ', 'SST2', 'SST5', 'TREC',

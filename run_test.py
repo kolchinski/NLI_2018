@@ -23,9 +23,9 @@ import models.load_embeddings as load_embeddings
 import constants
 
 args = dotdict({
+    'add_squad': True,
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
-    'add_squad': True,
     'type': 'siamese',
     'encoder_type': 'rnn',
     'lr': 0.01,
@@ -36,8 +36,8 @@ args = dotdict({
     'batches_per_epoch': 5000,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    #'hidden_size': 200,
     'hidden_size': 2048,
+    #'hidden_size': 200,
     'layer1_hidden_size': 1024,
     'embedding_size': 300,
     'n_layers': 1,

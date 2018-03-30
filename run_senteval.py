@@ -91,7 +91,7 @@ params_senteval = {
     'kfold': 5,
     'classifier': {
         'use_selfattention': False,
-        'nhid': None,
+        'nhid': 0,
         'optim': 'adam',
         'batch_size': 64,
         'tenacity': 5,
@@ -147,7 +147,6 @@ if __name__ == "__main__":
         sent_model = sent_model.cuda()
 
     def prepare(params, samples):
-
         params['config'] = args
         params['dm'] = dm
         params['sent_model'] = sent_model

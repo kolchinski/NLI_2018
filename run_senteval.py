@@ -33,11 +33,10 @@ args = dotdict({
     'type': 'siamese',
     'self_attn_inner_size': 128,
     'self_attn_outer_size': 8,
-    'sent_embed_type': 'selfattention',
+    'sent_embed_type': 'maxpool',
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
     'encoder_type': 'rnn',
-    'sent_embed_type': 'maxpool',
     'lr': 0.05,
     'use_dot_attention': True,
     'learning_rate_decay': 0.9,
@@ -50,7 +49,7 @@ args = dotdict({
     #'hidden_size': 200, #For decomposable model
     'para_init': 0.01,
     'intra_attn': True, # if we use intra_attention for decomposable model
-    'hidden_size': 2048, #1024 if n_layer=2
+    'hidden_size': 1024, #1024 if n_layer=2
     'layer1_hidden_size': 1024,
     'n_layers': 1,
     'bidirectional': True,

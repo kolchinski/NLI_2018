@@ -31,8 +31,8 @@ import logging
 args = dotdict({
     'add_squad': True,
     'type': 'siamese',
-    'self_attn_inner_size': 128,
-    'self_attn_outer_size': 8,
+    # 'self_attn_inner_size': 128,
+    # 'self_attn_outer_size': 8,
     'sent_embed_type': 'maxpool',
     #'type': 'decomposable',
     #'encoder_type': 'decomposable',
@@ -72,9 +72,9 @@ squad_args = dotdict({
     'batches_per_epoch': 500,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 2048,
+    'hidden_size': args.hidden_size,
     'n_layers': 1,
-    'bidirectional': False,
+    'bidirectional': args.bidirectional,
     'embedding_size': 300,
     'fix_emb': True,
     'dp_ratio': 0.3,
@@ -90,8 +90,8 @@ params_senteval = {
     'usepytorch': True,
     'kfold': 5,
     'classifier': {
-        'use_selfattention': True,
-        'nhid': 40,
+        'use_selfattention': False,
+        'nhid': 0,
         'optim': 'adam',
         'batch_size': 64,
         'tenacity': 5,
@@ -104,49 +104,49 @@ logging.basicConfig(format='%(asctime)s : %(message)s', level=logging.DEBUG)
 
 if __name__ == "__main__":
 
+    print(args)
+    checkpoint = sys.argv[1]
+    print('found checkpoint dir {}'.format(checkpoint))
+
+    dm = wrangle.DataManager(args)
+    if args.add_squad:  # add squad to vocab to match checkpoint
+        squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
+    args.n_embed = dm.vocab.n_words
+    if args.type == 'siamese':
+        model = siamese_pytorch.SiameseClassifier(config=args)
+    elif args.type == 'decomposable':
+        model = decomposable_pytorch.SNLIClassifier(config=args)
+    else:
+        model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
+
+    model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
+    dm.add_glove_to_vocab(constants.EMBED_DATA_PATH, args.embedding_size)
+
+    if args.type == 'siamese':
+        model.embed.weight.data = load_embeddings.load_embeddings(
+            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    elif args.type == 'decomposable':
+        model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
+            dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+    else:
+        model.encoder.embedding.weight.data = load_embeddings.\
+            load_embeddings(
+                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
+
+    if args.type == 'siamese':
+        sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
+            config=args, embed=model.embed, encoder=model.encoder)
+    elif args.type == 'decomposable':
+        sent_model = decomposable_pytorch.DecomposableClassifierSentEmbed(
+            config=args, embed=None, encoder=model.encoder)
+
+    model.eval()
+    sent_model.eval()
+    if args.cuda:
+        model = model.cuda()
+        sent_model = sent_model.cuda()
+
     def prepare(params, samples):
-        print(args)
-        checkpoint = sys.argv[1]
-        print('found checkpoint dir {}'.format(checkpoint))
-
-        dm = wrangle.DataManager(args)
-        if args.add_squad:  # add squad to vocab to match checkpoint
-            squad_dm = SquadDataManager(squad_args, vocab=dm.vocab)
-        args.n_embed = dm.vocab.n_words
-        if args.type == 'siamese':
-            model = siamese_pytorch.SiameseClassifier(config=args)
-        elif args.type == 'decomposable':
-            model = decomposable_pytorch.SNLIClassifier(config=args)
-        else:
-            model = Seq2SeqPytorch(args=args, vocab=dm.vocab)
-
-        model_pipeline_pytorch.load_checkpoint(model, checkpoint=checkpoint)
-        dm.add_glove_to_vocab(constants.EMBED_DATA_PATH, args.embedding_size)
-
-        if args.type == 'siamese':
-            model.embed.weight.data = load_embeddings.load_embeddings(
-                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        elif args.type == 'decomposable':
-            model.encoder.embedding.weight.data = load_embeddings.load_embeddings(
-                dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-        else:
-            model.encoder.embedding.weight.data = load_embeddings.\
-                load_embeddings(
-                    dm.vocab, constants.EMBED_DATA_PATH, args.embedding_size)
-
-        if args.type == 'siamese':
-            sent_model = siamese_pytorch.SiameseClassifierSentEmbed(
-                config=args, embed=model.embed, encoder=model.encoder)
-        elif args.type == 'decomposable':
-            sent_model = decomposable_pytorch.DecomposableClassifierSentEmbed(
-                config=args, embed=None, encoder=model.encoder)
-
-        model.eval()
-        sent_model.eval()
-        if args.cuda:
-            model = model.cuda()
-            sent_model = sent_model.cuda()
-
         params['config'] = args
         params['dm'] = dm
         params['sent_model'] = sent_model

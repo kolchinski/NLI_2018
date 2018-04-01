@@ -20,7 +20,7 @@ import constants
 
 logger = logging.getLogger(__name__)
 
-NumEpochs = 10000
+NumEpochs = 100000
 TrainEpochsPerTest = 4
 nli_args = dotdict({
     'type': 'siamese',
@@ -32,7 +32,7 @@ nli_args = dotdict({
     'batches_per_epoch': 500,
     'test_batches_per_epoch': 500,
     'input_size': 300,
-    'hidden_size': 1024,
+    'hidden_size': 2048,
     'n_layers': 1,
     'bidirectional': True,
     'embedding_size': 300,
@@ -132,14 +132,6 @@ if __name__ == "__main__":
             nli_model.cuda()
             squad_model.cuda()
 
-        _, squad_train_acc = model_pipeline_pytorch.train_squad(
-            model=squad_model,
-            optimizer=squad_optimizer,
-            epoch=epoch,
-            di=squad_dm,
-            args=squad_args,
-            loss_criterion=squad_criterion,
-        )
         _, nli_train_acc = model_pipeline_pytorch.train(
             model=nli_model,
             optimizer=nli_optimizer,
@@ -147,6 +139,14 @@ if __name__ == "__main__":
             di=nli_dm,
             args=nli_args,
             loss_criterion=nli_criterion,
+        )
+        _, squad_train_acc = model_pipeline_pytorch.train_squad(
+            model=squad_model,
+            optimizer=squad_optimizer,
+            epoch=epoch,
+            di=squad_dm,
+            args=squad_args,
+            loss_criterion=squad_criterion,
         )
 
         if epoch % TrainEpochsPerTest == 0:

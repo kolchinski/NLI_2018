@@ -26,7 +26,7 @@ nli_args = dotdict({
     'type': 'siamese',
     'encoder_type': 'rnn',
     'lr': 0.05,
-    'learning_rate_decay': 0.99,
+    'learning_rate_decay': 0.95,
     'max_length': 50,
     'batch_size': 64,
     'batches_per_epoch': 500,
@@ -73,7 +73,6 @@ if __name__ == "__main__":
     nli_dm = wrangle.DataManager(nli_args)
     squad_dm = SquadDataManager(squad_args, vocab=nli_dm.vocab)
     nli_args.n_embed = nli_dm.vocab.n_words
-    squad_dm.n_embed = squad_dm.vocab.n_words
     if nli_args.type == 'siamese':
         nli_model = siamese_pytorch.SiameseClassifier(config=nli_args)
         squad_model = squad_pytorch.SquadClassifier(
@@ -83,9 +82,6 @@ if __name__ == "__main__":
         )
     else:
         raise Exception('model type not supported')
-
-    nli_model.embed.weight.data = load_embeddings.load_embeddings(
-        nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
 
     print("number of trainable parameters found {}".format(
         sum(param.nelement() for param in nli_model.parameters()if param.requires_grad)
@@ -108,6 +104,11 @@ if __name__ == "__main__":
             embed=nli_model.embed,
             encoder=nli_model.encoder,
         )
+
+    squad_dm.n_embed = squad_dm.vocab.n_words
+    nli_model.embed.weight.data = load_embeddings.load_embeddings(
+        nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
+
 
     nli_criterion = nn.NLLLoss()
     squad_criterion = nn.NLLLoss()

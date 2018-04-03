@@ -14,8 +14,8 @@ class SquadClassifier(nn.Module):
         if self.config.fix_emb:
             self.embed.weight.requires_grad = False
         self.encoder = encoder
-        for param in self.encoder.parameters():
-            param.requires_grad = False
+        # for param in self.encoder.parameters():
+        #     param.requires_grad = False
 
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()

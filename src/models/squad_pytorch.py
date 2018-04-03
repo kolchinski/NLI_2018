@@ -88,10 +88,10 @@ class SquadClassifier(nn.Module):
             q_maxpool,
             a1_maxpool,
             a2_maxpool,
-            torch.abs(a1_maxpool - a2_maxpool),
             torch.abs(q_maxpool - a1_maxpool),
+            q_maxpool * a1_maxpool,
             torch.abs(q_maxpool - a2_maxpool),
-            a1_maxpool * a2_maxpool,
+            q_maxpool * a2_maxpool,
         ], 1))  # [batch_size, 3]
 
         softmax_outputs = F.log_softmax(scores, dim=1)  # [batch_size, 2]

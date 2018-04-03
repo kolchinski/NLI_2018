@@ -105,7 +105,7 @@ if __name__ == "__main__":
     nli_model.embed.weight.data = load_embeddings.load_embeddings(
         nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
     squad_model.embed.weight.data = load_embeddings.load_embeddings(
-        squad_model.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
+        squad_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
 
     nli_criterion = nn.NLLLoss()
     squad_criterion = nn.NLLLoss()

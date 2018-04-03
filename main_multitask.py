@@ -74,6 +74,9 @@ if __name__ == "__main__":
     nli_args.n_embed = nli_dm.vocab.n_words
     if nli_args.type == 'siamese':
         nli_model = siamese_pytorch.SiameseClassifier(config=nli_args)
+
+        squad_dm = SquadDataManager(squad_args)
+        squad_args.n_embed = squad_dm.vocab.n_words
         squad_model = squad_pytorch.SquadClassifier(
             config=squad_args,
             encoder=nli_model.encoder,
@@ -99,8 +102,6 @@ if __name__ == "__main__":
         nli_state['lr'] = 0.01
         print('resetting lr as {}'.format(nli_state['lr']))
 
-    squad_dm = SquadDataManager(squad_args)
-    squad_dm.n_embed = squad_dm.vocab.n_words
     nli_model.embed.weight.data = load_embeddings.load_embeddings(
         nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
     squad_model.embed.weight.data = load_embeddings.load_embeddings(

@@ -7,10 +7,10 @@ import torch.nn.functional as F
 
 class SquadClassifier(nn.Module):
 
-    def __init__(self, config, embed, encoder):
+    def __init__(self, config, encoder):
         super(SquadClassifier, self).__init__()
         self.config = config
-        self.embed = embed
+        self.embed = nn.Embedding(config.n_embed, config.embedding_size)
         self.encoder = encoder
 
         self.dropout = nn.Dropout(p=config.dp_ratio)

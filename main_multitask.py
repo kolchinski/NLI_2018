@@ -74,6 +74,11 @@ if __name__ == "__main__":
     nli_args.n_embed = nli_dm.vocab.n_words
     if nli_args.type == 'siamese':
         nli_model = siamese_pytorch.SiameseClassifier(config=nli_args)
+        squad_model = squad_pytorch.SquadClassifier(
+            config=squad_args,
+            embed=nli_model.embed,
+            encoder=nli_model.encoder,
+        )
     else:
         raise Exception('model type not supported')
 
@@ -90,20 +95,17 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         checkpoint_dir = sys.argv[1]
         print('loading from checkpoint in {}'.format(checkpoint_dir))
-        model_pipeline_pytorch.load_checkpoint(nli_model, checkpoint=checkpoint_dir)
+        model_pipeline_pytorch.load_checkpoint(
+            nli_model, checkpoint=checkpoint_dir)
         nli_state['lr'] = 0.01
         print('resetting lr as {}'.format(nli_state['lr']))
-        squad_model = squad_pytorch.SquadClassifier(
-            config=squad_args,
-            embed=nli_model.embed,
-            encoder=nli_model.encoder,
-        )
 
-    squad_dm = SquadDataManager(squad_args, vocab=nli_dm.vocab)
+    squad_dm = SquadDataManager(squad_args)
     squad_dm.n_embed = squad_dm.vocab.n_words
     nli_model.embed.weight.data = load_embeddings.load_embeddings(
         nli_dm.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
-
+    squad_model.embed.weight.data = load_embeddings.load_embeddings(
+        squad_model.vocab, constants.EMBED_DATA_PATH, nli_args.embedding_size)
 
     nli_criterion = nn.NLLLoss()
     squad_criterion = nn.NLLLoss()

@@ -11,6 +11,8 @@ class SquadClassifier(nn.Module):
         super(SquadClassifier, self).__init__()
         self.config = config
         self.embed = nn.Embedding(config.n_embed, config.embedding_size)
+        if self.config.fix_emb:
+            self.embed.weight.requires_grad = False
         self.encoder = encoder
 
         self.dropout = nn.Dropout(p=config.dp_ratio)

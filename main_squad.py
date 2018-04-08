@@ -72,7 +72,7 @@ if __name__ == "__main__":
     print(nli_args)
 
     nli_dm = wrangle.DataManager(nli_args)
-    squad_dm = SquadDataManager(squad_args, vocab=nli_dm.vocab)
+    squad_dm = SquadDataManager(squad_args)
     nli_args.n_embed = nli_dm.vocab.n_words
     squad_dm.n_embed = squad_dm.vocab.n_words
     if nli_args.type == 'siamese':

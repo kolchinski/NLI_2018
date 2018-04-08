@@ -47,6 +47,7 @@ nli_state = {k: v for k, v in nli_args.items()}
 squad_args = dotdict({
     'type': 'siamese',
     'encoder_type': 'rnn',
+    'bottle_dim': 4096,
     'lr': 0.05,
     'learning_rate_decay': 0.99,
     'max_length': 50,

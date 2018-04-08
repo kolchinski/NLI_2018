@@ -79,7 +79,6 @@ if __name__ == "__main__":
         nli_model = siamese_pytorch.SiameseClassifier(config=nli_args)
         squad_model = squad_pytorch.SquadClassifier(
             config=squad_args,
-            embed=nli_model.embed,
             encoder=nli_model.encoder,
         )
     else:

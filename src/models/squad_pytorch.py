@@ -89,14 +89,14 @@ class SquadClassifier(nn.Module):
             raise Exception("{} not supported".format(
                 self.config.encoder_type))
 
-        if hasattr(self, 'bottle'):
-            a1 = self.bottle(a1)
-            a2 = self.bottle(a2)
-            q = self.bottle(q)
-
         a1_maxpool = torch.max(a1, 0)[0]  # [batch_size, embed_size]
         a2_maxpool = torch.max(a2, 0)[0]  # [batch_size, embed_size]
         q_maxpool = torch.max(q, 0)[0]
+
+        if hasattr(self, 'bottle'):
+            a1_maxpool = self.bottle(a1_maxpool)
+            a2_maxpool = self.bottle(a2_maxpool)
+            q_maxpool = self.bottle(q_maxpool)
 
         scores = self.out(torch.cat([
             q_maxpool,

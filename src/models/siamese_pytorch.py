@@ -217,12 +217,12 @@ class SiameseClassifier(nn.Module):
                 hypothesis, padding_value=-np.infty)[0]
             hypothesis = hypothesis.index_select(1, decoder_unsort)
 
-        if hasattr(self.config, 'bottle_dim') and self.config.bottle_dim:
-            premise = self.bottle(premise)
-            hypothesis = self.bottle(hypothesis)
-
         premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]
         hypothesis_maxpool = torch.max(hypothesis, 0)[0]
+
+        if hasattr(self.config, 'bottle_dim') and self.config.bottle_dim:
+            premise_maxpool = self.bottle(premise_maxpool)
+            hypothesis_maxpool = self.bottle(hypothesis_maxpool)
 
         scores = self.out(torch.cat([
             premise_maxpool,

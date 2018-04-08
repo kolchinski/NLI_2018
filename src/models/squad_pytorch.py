@@ -22,16 +22,17 @@ class SquadClassifier(nn.Module):
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
 
-        seq_in_size = 7 * config.hidden_size
+        embed_size = config.hidden_size
         if self.config.bidirectional:
-            seq_in_size *= 2
+            embed_size *= 2
+        seq_in_size = 7 * embed_size
         if bottle:
             self.bottle = bottle
             seq_in_size = config.bottle_dim
         elif hasattr(config, 'bottle_dim'):
-            self.bottle = model_utils_pytorch.BottleLinear(
-                d_in=seq_in_size, d_out=config.bottle_dim)
-            seq_in_size = config.bottle_dim
+            self.bottle = model_utils_pytorch.Linear(
+                d_in=embed_size, d_out=config.bottle_dim)
+            seq_in_size = 7 * config.bottle_dim
 
         classifier_transforms = []
         prev_hidden_size = seq_in_size

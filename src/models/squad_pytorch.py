@@ -4,10 +4,12 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
+import src.models.model_utils_pytorch as model_utils_pytorch
+
 
 class SquadClassifier(nn.Module):
 
-    def __init__(self, config, encoder):
+    def __init__(self, config, encoder, bottle=None):
         super(SquadClassifier, self).__init__()
         self.config = config
         self.embed = nn.Embedding(config.n_embed, config.embedding_size)
@@ -23,6 +25,13 @@ class SquadClassifier(nn.Module):
         seq_in_size = 7 * config.hidden_size
         if self.config.bidirectional:
             seq_in_size *= 2
+        if bottle:
+            self.bottle = bottle
+            seq_in_size = config.bottle_dim
+        elif hasattr(config, 'bottle_dim'):
+            self.bottle = model_utils_pytorch.BottleLinear(
+                d_in=seq_in_size, d_out=config.bottle_dim)
+            seq_in_size = config.bottle_dim
 
         classifier_transforms = []
         prev_hidden_size = seq_in_size
@@ -79,6 +88,11 @@ class SquadClassifier(nn.Module):
         else:
             raise Exception("{} not supported".format(
                 self.config.encoder_type))
+
+        if hasattr(self, 'bottle'):
+            a1 = self.bottle(a1)
+            a2 = self.bottle(a2)
+            q = self.bottle(q)
 
         a1_maxpool = torch.max(a1, 0)[0]  # [batch_size, embed_size]
         a2_maxpool = torch.max(a2, 0)[0]  # [batch_size, embed_size]

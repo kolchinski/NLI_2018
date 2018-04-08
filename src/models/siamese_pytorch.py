@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 import src.models.transformer_pytorch as transformer_pytorch
+import src.models.model_utils_pytorch as model_utils_pytorch
 
 
 class RNNEncoder(nn.Module):
@@ -15,16 +16,21 @@ class RNNEncoder(nn.Module):
         input_size = config.embedding_size
         if config.n_layers == 1:
             self.rnn = nn.LSTM(
-                input_size=input_size, hidden_size=config.hidden_size,
-                num_layers=config.n_layers, dropout=config.dp_ratio,
+                input_size=input_size,
+                hidden_size=config.hidden_size,
+                num_layers=config.n_layers,
+                dropout=config.dp_ratio,
                 bidirectional=config.bidirectional)
         elif config.n_layers == 2:
             self.rnn = nn.LSTM(
-                input_size=input_size, hidden_size=config.layer1_hidden_size,
-                num_layers=1, dropout=config.dp_ratio,
+                input_size=input_size,
+                hidden_size=config.layer1_hidden_size,
+                num_layers=1,
+                dropout=config.dp_ratio,
                 bidirectional=config.bidirectional)
             self.rnn2 = nn.LSTM(
-                input_size=config.layer1_hidden_size*2, hidden_size=config.hidden_size,
+                input_size=config.layer1_hidden_size*2,
+                hidden_size=config.hidden_size,
                 num_layers=1, dropout=config.dp_ratio,
                 bidirectional=config.bidirectional)
 
@@ -99,7 +105,8 @@ class SiameseClassifierSentEmbed(nn.Module):
                 mask[l:, i, :] = 1
         premise[mask] = 0
         if self.config.sent_embed_type == 'maxpool':
-            premise_sent_embed = torch.max(premise, dim=0)[0]  # [batch_size, embed_size]
+            # [batch_size, embed_size]
+            premise_sent_embed = torch.max(premise, dim=0)[0]
         elif self.config.sent_embed_type == 'meanpool':
             premise_sent_embed = torch.div(
                 torch.sum(premise, dim=0),
@@ -148,6 +155,11 @@ class SiameseClassifier(nn.Module):
         if self.config.bidirectional:
             seq_in_size *= 2
 
+        if hasattr(config, 'bottle_dim') and config.bottle_dim:
+            self.bottle = model_utils_pytorch.BottleLinear(
+                d_in=seq_in_size, d_out=config.bottle_dim)
+            seq_in_size = config.bottle_dim
+
         classifier_transforms = []
         prev_hidden_size = seq_in_size
         for next_hidden_size in config.mlp_classif_hidden_size_list:
@@ -187,7 +199,8 @@ class SiameseClassifier(nn.Module):
                 hidden=encoder_init_hidden,
                 batch_size=batch_size
             )
-            premise = nn.utils.rnn.pad_packed_sequence(premise)[0]
+            premise = nn.utils.rnn.pad_packed_sequence(
+                premise, padding_value=-np.infty)[0]
             premise = premise.index_select(1, encoder_unsort)
         if self.config.encoder_type == 'transformer':
             hypothesis = self.encoder(
@@ -200,8 +213,13 @@ class SiameseClassifier(nn.Module):
                 hidden=encoder_init_hidden,
                 batch_size=batch_size
             )
-            hypothesis = nn.utils.rnn.pad_packed_sequence(hypothesis)[0]
+            hypothesis = nn.utils.rnn.pad_packed_sequence(
+                hypothesis, padding_value=-np.infty)[0]
             hypothesis = hypothesis.index_select(1, decoder_unsort)
+
+        if hasattr(self.config, 'bottle_dim') and self.config.bottle_dim:
+            premise = self.bottle(premise)
+            hypothesis = self.bottle(hypothesis)
 
         premise_maxpool = torch.max(premise, 0)[0]  # [batch_size, embed_size]
         hypothesis_maxpool = torch.max(hypothesis, 0)[0]

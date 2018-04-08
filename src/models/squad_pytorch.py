@@ -4,21 +4,35 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
+import src.models.model_utils_pytorch as model_utils_pytorch
+
 
 class SquadClassifier(nn.Module):
 
-    def __init__(self, config, embed, encoder):
+    def __init__(self, config, encoder, bottle=None):
         super(SquadClassifier, self).__init__()
         self.config = config
-        self.embed = embed
+        self.embed = nn.Embedding(config.n_embed, config.embedding_size)
+        if self.config.fix_emb:
+            self.embed.weight.requires_grad = False
         self.encoder = encoder
+        # for param in self.encoder.parameters():
+        #     param.requires_grad = False
 
         self.dropout = nn.Dropout(p=config.dp_ratio)
         self.relu = nn.ReLU()
 
-        seq_in_size = 7 * config.hidden_size
+        embed_size = config.hidden_size
         if self.config.bidirectional:
-            seq_in_size *= 2
+            embed_size *= 2
+        seq_in_size = 7 * embed_size
+        if bottle:
+            self.bottle = bottle
+            seq_in_size = config.bottle_dim
+        elif hasattr(config, 'bottle_dim'):
+            self.bottle = model_utils_pytorch.Linear(
+                d_in=embed_size, d_out=config.bottle_dim)
+            seq_in_size = 7 * config.bottle_dim
 
         classifier_transforms = []
         prev_hidden_size = seq_in_size
@@ -80,14 +94,19 @@ class SquadClassifier(nn.Module):
         a2_maxpool = torch.max(a2, 0)[0]  # [batch_size, embed_size]
         q_maxpool = torch.max(q, 0)[0]
 
+        if hasattr(self, 'bottle'):
+            a1_maxpool = self.bottle(a1_maxpool)
+            a2_maxpool = self.bottle(a2_maxpool)
+            q_maxpool = self.bottle(q_maxpool)
+
         scores = self.out(torch.cat([
             q_maxpool,
             a1_maxpool,
             a2_maxpool,
-            torch.abs(a1_maxpool - a2_maxpool),
             torch.abs(q_maxpool - a1_maxpool),
+            q_maxpool * a1_maxpool,
             torch.abs(q_maxpool - a2_maxpool),
-            a1_maxpool * a2_maxpool,
+            q_maxpool * a2_maxpool,
         ], 1))  # [batch_size, 3]
 
         softmax_outputs = F.log_softmax(scores, dim=1)  # [batch_size, 2]

@@ -47,6 +47,7 @@ nli_state = {k: v for k, v in nli_args.items()}
 squad_args = dotdict({
     'type': 'siamese',
     'encoder_type': 'rnn',
+    'bottle_dim': 4096,
     'lr': 0.05,
     'learning_rate_decay': 0.99,
     'max_length': 50,
@@ -71,14 +72,13 @@ if __name__ == "__main__":
     print(nli_args)
 
     nli_dm = wrangle.DataManager(nli_args)
-    squad_dm = SquadDataManager(squad_args, vocab=nli_dm.vocab)
+    squad_dm = SquadDataManager(squad_args)
     nli_args.n_embed = nli_dm.vocab.n_words
-    squad_dm.n_embed = squad_dm.vocab.n_words
+    squad_args.n_embed = squad_dm.vocab.n_words
     if nli_args.type == 'siamese':
         nli_model = siamese_pytorch.SiameseClassifier(config=nli_args)
         squad_model = squad_pytorch.SquadClassifier(
             config=squad_args,
-            embed=nli_model.embed,
             encoder=nli_model.encoder,
         )
     else:

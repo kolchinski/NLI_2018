@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 class SquadDataManager(DataManager):
 
-    def __init__(self, args, vocab):
+    def __init__(self, args):
         self.config = args
         self.max_len = self.config.max_length
-        self.vocab = vocab
+        self.vocab = vocab_pytorch.Vocab()
         self.batch_size = args.batch_size
         print('loading train..')
         (

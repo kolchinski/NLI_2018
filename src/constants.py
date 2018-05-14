@@ -15,6 +15,10 @@ EMBED_DATA_PATH = os.path.join(ROOT_PATH, 'static/glove')
 ALLNLI_DIR = os.path.join(ROOT_PATH, 'static/AllNLI')
 ALLNLI_TRAIN_TOK_DATA_PATH = os.path.join(ALLNLI_DIR, 'train.')
 
-SQUAD_DIR = os.path.join(ROOT_PATH, 'static/squad')
-SQUAD_FULL_TRAIN_DATA_PATH = os.path.join(SQUAD_DIR, 'train_squad_classif.txt')
-SQUAD_DEV_DATA_PATH = os.path.join(SQUAD_DIR, 'dev_squad_classif.txt')
+# SQUAD_DIR = os.path.join(ROOT_PATH, 'static/squad')
+# SQUAD_FULL_TRAIN_DATA_PATH = os.path.join(SQUAD_DIR, 'train_squad_classif.txt')
+# SQUAD_DEV_DATA_PATH = os.path.join(SQUAD_DIR, 'dev_squad_classif.txt')
+
+SQUAD_DIR = os.path.join(ROOT_PATH, 'static/')
+SQUAD_FULL_TRAIN_DATA_PATH = os.path.join(SQUAD_DIR, 'train_nli_classif.txt')
+SQUAD_DEV_DATA_PATH = os.path.join(SQUAD_DIR, 'dev_nli_classif.txt')

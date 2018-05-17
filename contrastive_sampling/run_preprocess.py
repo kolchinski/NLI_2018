@@ -9,7 +9,7 @@ path = '/Users/yukatherin/Downloads/train_yoda'
 with open(path) as f:
     source_data = pd.read_csv(f, sep='\t', header=None, quotechar='"')
 sample_nli_classif_dataset(source_data=source_data,
-    output_path='/Users/yukatherin/Downloads/train_allnli_classif.txt')
+    output_path='/Users/yukatherin/Downloads/train_allnli_classif_k1.txt')
 
 
 print('sampling train allnli')
@@ -17,7 +17,7 @@ path = '/Users/yukatherin/Downloads/tune_yoda'
 with open(path) as f:
     source_data = pd.read_csv(f, sep='\t', header=None, quotechar='"')
 sample_nli_classif_dataset(source_data=source_data,
-    output_path='/Users/yukatherin/Downloads/tune_allnli_classif.txt')
+    output_path='/Users/yukatherin/Downloads/tune_allnli_classif_k1.txt')
 
 
 import sys; sys.exit(0)

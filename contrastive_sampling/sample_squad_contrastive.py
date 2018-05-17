@@ -14,8 +14,7 @@ def word_tokenize(tokens):
 
 def sample_squad_classif_dataset(
     gl_vocab, source_data, output_path,
-    start_ratio=0.0, stop_ratio=1.0, MinAnswerLen=3
-):
+    start_ratio=0.0, stop_ratio=1.0, MinAnswerLen=3):
     q = []
     a = []
     start_ai = int(round(len(source_data['data']) * start_ratio))
